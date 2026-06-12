@@ -1,0 +1,25 @@
+# Dataset folders
+Training/
+Testing/
+Bleeding/
+External_Test/
+
+# Outputs
+output/
+output_eval/
+
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Model files
+*.h5
+*.pt
+*.pth
+
+# OS files
+.DS_Store
+Thumbs.db

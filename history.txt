@@ -1,0 +1,1000 @@
+   29  cmake -DCMAKE_INSTALL_PREFIX=/opt/root6.36/ ../root-6.36.04/ -Dxrootd=OFF
+   30  make clean
+   31  cmake --build . -j 8
+   32  rm -rf *
+   33  cmake -DCMAKE_INSTALL_PREFIX=/opt/root6.36/ ../root-6.36.04/ -Dxrootd=OFF -Dccache=ON
+   34  cmake --build . -j 10
+   35  sudo cmake --build . --target install 
+   36  source /opt/root6.36/bin/thisroot.sh 
+   37  root
+   38  root -l
+   39  nano ~/.bashrc 
+   40  ifconfig
+   41  sudo apt install net-tools
+   42  ifconfig
+   43  sudo mkdir -p /var/www/html/sroychow
+   44  sudo chown -R $USER:$USER /var/www/html/sroychow
+   45  nano /var/www/html/mywebsite/index.html
+   46  ls -ltrh nano /var/www/html/mywebsite/index.html
+   47  nano /var/www/html/sroychow/index.html
+   48  sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/sroychow-teaching.conf
+   49  sudo nano /etc/apache2/sites-available/sroychow-teaching.conf 
+   50  sudo a2ensite sroychow-teaching.conf
+   51  sudo systemctl reload apache2
+   52  sudo systemctl status apache2
+   53  ls /var/www/html/
+   54  ls /var/www/html/sroychow/
+   55  less /var/www/html/sroychow/index.html 
+   56  less /var/www/html/index.html 
+   57  sudo nano /etc/apache2/sites-available/sroychow-teaching.conf 
+   58  ls  ${APACHE_LOG_DIR}/error.log
+   59  sudo apt update && sudo apt upgrade -y
+   60  sudo apt autoremove
+   61  apachectl -v
+   62  sudo apt install apache2 -y
+   63  apachectl -v
+   64  sudo systemctl enable apache2
+   65  sudo systemctl start apache2
+   66  sudo systemctl status apache2
+   67  /etc/apache2/sites-available
+   68  sudo ufw allow 'Apache Full'
+   69  sudo ufw enable
+   70  sudo chmod -R 755 /var/www/sroychow
+   71  #sudo chmod -R 755 /var/www/sroychow
+   72  sudo apt update && sudo apt upgrade -y
+   73  sudo apt install openssh-client
+   74  sudo apt install openssh-server
+   75  sudo systemctl enable ssh --now
+   76  sudo systemctl status ssh
+   77  sudo apt install pdfunite
+   78  sudo apt install poppler-utils
+   79  cd Downloads/
+   80  ls -ltrh
+   81  pdfunite 3283_001.pdf final\ -seed\ -rec.pdf bill\ 303-ANT\ PC.pdf workstation-seed.pdf
+   82  curl -fsS -o- https://deb.packages.mattermost.com/setup-repo.sh | sudo bash
+   83  sudo apt install curl
+   84  curl -fsS -o- https://deb.packages.mattermost.com/setup-repo.sh | sudo bash
+   85  sudo apt install mattermost-desktop
+   86  sudo apt upgrade mattermost-desktop
+   87  ip a
+   88  ls /var/www/
+   89  ls /var/www/html/
+   90  cd /var/www/
+   91  ls
+   92  mv html/sroychow/ .\
+   93  sudo mv html/sroychow/ .
+   94  ls -ltrh
+   95  sudo mv sroychow/ sroychow-teaching
+   96  ls -ltrtrh
+   97  ls -ltrtrh /etc/apache2/sites-available/
+   98  sudo emacs -nw /etc/apache2/sites-available/sroychow-teaching.conf
+   99  sudo chown -R $USER:$USER /var/www/sroychow-teaching/
+  100  ls -ltrh /var/www/sroychow-teaching/
+  101  sudo chmod -R 755 /var/www/sroychow-teaching/
+  102  sudo emacs -nw /etc/apache2/sites-available/sroychow-teaching.conf
+  103  sudo a2ensite sroychow-teaching.conf
+  104  sudo a2dissite 000-default.conf
+  105  sudo systemctl restart apache2
+  106  sudo apache2ctl configtest
+  107  sudo systemctl restart apache2
+  108  sudo systemctl status apache2
+  109  sudo systemctl stop apache2
+  110  ifconfig
+  111  telnet 10.9.1.99 22
+  112  sudo systemctl start ssh
+  113  sudo systemctl status ssh
+  114  sudo ufw enable
+  115  sudo systemctl status ssh
+  116  cd 
+  117  ks
+  118  ls 
+  119  ls -ltrh
+  120  rm -rf UPES/
+  121  cd UPES/
+  122  ls -ltrh
+  123  mkdir vlab
+  124  cd vlab/
+  125  git clone git@github.com:Kalana304/SchrodingerWaveEquation_NumericalSolution.git
+  126  ssh-keygen -t ed25519 -C "sroychow@cern.ch"
+  127  eval "$(ssh-agent -s)"
+  128  cat ~/.ssh/id_ed25519.pub
+  129  ssh -T git@github.com
+  130  mkdir qm
+  131  cd qm/
+  132  git clone git@github.com:Kalana304/SchrodingerWaveEquation_NumericalSolution.git
+  133  cd SchrodingerWaveEquation_NumericalSolution/
+  134  ls -ltrh
+  135  cd Python_scripts/
+  136  ls -ltrh
+  137  less Schrodinger-Solver-1D.py 
+  138  python3 Schrodinger-Solver-1D.py 
+  139  python3 Schrodinger-Solver-1D.py 1 10 10
+  140  ls -ltrh
+  141  cd ../..
+  142  ls
+  143  git clone git@github.com:quantum-visualizations/qmsolve.git
+  144  cd qmsolve/
+  145  ls -ltrh
+  146  less setup.py 
+  147  python3 examples/eigenstate\ solver\ examples/1D_harmonic_oscillator.py 
+  148  ls -ltrh
+  149  python3 -m venv
+  150  cd ..
+  151  ls
+  152  python3 -m venv venv
+  153  python3apt install python3.12-venv
+  154  sudo apt install python3.12-venv
+  155  python3 -m venv venv
+  156  source venv/bin/activate
+  157  pip install qmsolv
+  158  pip install qmsolve
+  159  ls
+  160  cd qmsolve/
+  161  ls -ltreh
+  162  ls -ltrh
+  163  cd examples/
+  164  ls
+  165  python3 eigenstate\ solver\ examples/1D_harmonic_oscillator.py 
+  166  ls -lrth
+  167  cd eigenstate\ solver\ examples/
+  168  ls -ltrh
+  169  python 1D_particle_in_a_box.py
+  170  jtop
+  171  htop
+  172  emacs -nw 1D_particle_in_a_box.py
+  173  emacs -nw 2D_particle_in_a_box.py
+  174  cp 3D_harmonic_oscillator.py 3D_particle_in_a_box.py
+  175  emacs -nw 3D_particle_in_a_box.py 
+  176  cd UPES/
+  177  ls -ltrh
+  178  cd vlab/
+  179  ls -ltrh
+  180  cd qm/
+  181  ls -ltrh
+  182  cd qmsolve/
+  183  ls -ltrh
+  184  cd ..
+  185  ls
+  186  source venv/bin/activate
+  187  cd qmsolve/
+  188  ls -ltrh
+  189  cd examples/
+  190  ls -ltrh
+  191  cd eigenstate\ solver\ examples/
+  192  ls -ltrh
+  193  python 1D_particle_in_a_box.py 
+  194  less ../../.git/config 
+  195  python 1D_particle_in_a_box.py 
+  196  ls -ltrh
+  197  cp 2D_harmonic_oscillator.py 2D_particle_in_a_box.py 
+  198  emacs -nw 2D_particle_in_a_box.py 
+  199  python 2D_particle_in_a_box.py 
+  200  python 3D_particle_in_a_box.py 
+  201  python 1D_particle_in_a_box.py 
+  202  python 2D_particle_in_a_box.py 
+  203  mkdir BSc_Cpp_exam
+  204  cd BSc_Cpp_exam/
+  205  g++
+  206  clear
+  207  gedit dakshita.cpp&
+  208  g++ dakshita.cpp
+  209  ./a.o
+  210  ./dakshita-o
+  211  ./a.out 
+  212  g++ dakshita.cpp
+  213  ./a.out 
+  214  g++ dakshita.cpp
+  215  ./a.out 
+  216  cd BSc_Cpp_exam/
+  217  ls
+  218  gedit Onjoli.cpp
+  219  gedit saksham.cpp&
+  220  gedit adarshxavier.cpp&
+  221  g++ Onjoli.cpp
+  222  ./a.out
+  223  clear
+  224  g++ Onjoli.cpp
+  225  ./a.out 
+  226  g++ Onjoli.cpp
+  227  ./a.out 
+  228  g++ Onjoli.cpp
+  229  ./a.out 
+  230  g++ Onjoli.cpp
+  231  ./a.out 
+  232  clear
+  233  python3
+  234  cd BSc_Cpp_exam/
+  235  nano adithya.cpp 
+  236  cd BSc_Cpp_exam/
+  237  nano adithya.cpp 
+  238  nano adithya.cpp ]
+  239  nano adithya.cpp 
+  240  clear
+  241  gedit sai.cpp
+  242  Dhairya
+  243  gedit dhairya.cpp&
+  244  gedit samarjeet.cpp
+  245  gedit aditya.cpp&
+  246  g++
+  247  g++ sai.cpp
+  248  ./a.out
+  249  g++ sai.cpp
+  250  ./a.out
+  251  g++ sai.cpp
+  252  ./a.out
+  253  g++ sai.cpp
+  254  ./a.out
+  255  g++ sai.cpp
+  256  ./a.out
+  257  g++ sai.cpp
+  258  ./a.out
+  259  CLEAR
+  260  clear
+  261  g++ samarjeet.cpp
+  262  ./a.out
+  263  g++ samarjeet.cpp
+  264  ./a.out
+  265  g++ samarjeet.cpp
+  266  ./a.out
+  267  ls
+  268  clear
+  269  python3
+  270  cd BSc_Cpp_exam/
+  271  ls
+  272  gedit prabhakar.cpp&
+  273  g++ prabhakar.cpp
+  274  ./a.out
+  275  python3
+  276  cd BSc_Cpp_exam/
+  277  ls
+  278  less aditya.cpp 
+  279  ping jivaavaultt.com
+  280  python3
+  281  nano test.py
+  282  python3 test.py 
+  283  sudo apt install python3-docx
+  284  python3 test.py 
+  285  nano test.py
+  286  rm test.py 
+  287  nano test.py
+  288  python3 test.py 
+  289  ls -ltrh
+  290  emacs -nw gelim.py
+  291  python3 gelim.py
+  292  python3
+  293  emacs -nw euler.py
+  294  python3 euler.py 
+  295  emacs -nw euler.py
+  296  fg
+  297  python3 euler.py 
+  298  emacs -nw euler.py
+  299  python3 euler.py 
+  300  emacs -nw euler.py
+  301  python3 euler.py 
+  302  emacs -nw euler.py
+  303  python3 euler.py 
+  304  emacs -nw euler.py
+  305  python3 euler.py 
+  306  emacs -nw euler.py
+  307  python3 euler.py 
+  308  emacs -nw euler.py
+  309  python3 euler.py 
+  310  emacs -nw euler.py
+  311  python3 euler.py 
+  312  python3
+  313  emacs -nw jacobi.py
+  314  python3 jacobi.py 
+  315  emacs -nw jacobi.py
+  316  python3
+  317  clear
+  318  cd Documents/Teaching/
+  319  ls -ltrh
+  320  cd ComputationMethodsIII/
+  321  ls -ltrh
+  322  cd evaluation/
+  323  ls -ltrh
+  324  git clone git@github.com:sroychow/marks-mech2080.git
+  325  cd marks-mech2080/
+  326  ls -ltrh
+  327  cp index.html end-sem.html
+  328  ls -ltrh ~/Downloads/
+  329  mv ~/Downloads/BTechMechinal-Exam\(End-Sem\).csv endsem.csv
+  330  mv end-sem.html endsem.html
+  331  emacs -nw endsem.
+  332  emacs -nw endsem.html 
+  333  git add endsem.html
+  334  git add endsem.csv 
+  335  git commit -m "add endsem marks"
+  336  git config --global user.email "sroychow@cern.ch"
+  337  git config --global user.name "Suvankar Roy Chowdhury"
+  338  git commit -m "add endsem marks"
+  339  git push origin main
+  340  mv ~/Downloads/endsem.csv .
+  341  git add endsem.csv 
+  342  git commit -m "fix endsem  csv"
+  343  git push origin main
+  344  python3 
+  345  clear
+  346  cd Documents/Teaching/
+  347  ls -ltrh
+  348  cd ComputationMethodsIII/
+  349  ls -ltrh
+  350  cd evaluation/
+  351  ls -ltrh
+  352  ls -ltrh
+  353  mv index.html ia.html
+  354  emacs -nw index.html
+  355  cp marks.csv ia.csv
+  356  emacs -nw ia.html
+  357  cp ia.html endsem.html
+  358  emacs -nw endsem.html
+  359  git status -s
+  360  git add endsem.html index.html ia.csv ia.html
+  361  git commit -m "make robust index page"
+  362  git push origin main
+  363  emacs -nw ia.html
+  364  emacs -nw ia.csv 
+  365  emacs -nw endsem.csv 
+  366  python3
+  367  cd Downloads/
+  368  ls -ltrh
+  369  sudo apt-get install convert
+  370  cd LabGuidelines/
+  371  ls -ltrh
+  372  cd timtable/
+  373  pdfunite monday.pdf tuesday.pdf wednesday.pdf thursday.pdf Friday.pdf saturday.pdf Lab-Timetable.pdf
+  374  cd Downloads/LabGuidelines/
+  375  ls -ltrh
+  376  cd timtable/
+  377  pdfunite monday.pdf tuesday.pdf wednesday.pdf thursday.pdf friday.pdf saturday.pdf Lab-Timetable.pdf 
+  378  pdfunite monday.pdf tuesday.pdf wednesday.pdf thursday.pdf friday.pdf saturday.pdf Lab-RotationConsolidated.pdf
+  379  python
+  380  python3
+  381  df -h
+  382  cd /media/sroychow/_data/
+  383  mkdir pthakur
+  384  sudo apt install openssh-client
+  385  sudo apt install openssh-server
+  386  sudo systemctl restart ssh.service
+  387  ifconfig
+  388  ssh sroychow@10.9.1.99
+  389  sudo adduser pthakur
+  390  ls -ltrh
+  391  chown -R pthakur. pthakur/
+  392  chown -R pthakur pthakur/
+  393  ls -ltrh
+  394  sudo chown -R pthakur pthakur/
+  395  ls -ltrh
+  396  cd pthakur/
+  397  pwd
+  398  ls -ltrh
+  399  cd ..
+  400  ls -ltrh
+  401  sudo chown -R pthakur.pthakur pthakur/
+  402  sudo chown -R pthakur:pthakur pthakur/
+  403  ls -ltrh
+  404  sudo chown -R pthakur:users pthakur/
+  405  sudo apt-get install wget
+  406  cd 
+  407  cd Downloads/
+  408  ls -lrthy
+  409  ls -ltrh
+  410  cd LabGuidelines/
+  411  ls -tlrh
+  412  cd timtable/
+  413  ls -ltrh
+  414  pdfunite monday.pdf tuesday.pdf wednesday.pdf thursday.pdf friday.pdf saturday.pdf Lab-RotationConsolidated.pdf
+  415  python
+  416  python3
+  417  cd 
+  418  cd Downloads/
+  419  ls -ltrh
+  420  sudo mv brain-ct/ /home/pthakur/
+  421  cd /home/pthakur/
+  422  ls -ltrh
+  423  cd /home/pthakur/
+  424  ls
+  425  sudo cd /home/pthakur/
+  426  ls -ltrh
+  427  sudo ls -ltrh /home/pthakur/
+  428  sudo chown -R pthakur.users /home/pthakur/
+  429  sudo chown -R pthakur.pthakur /home/pthakur/
+  430  sudo chown -R pthakur /home/pthakur/brain-ct
+  431  sudo ls -ltrh /home/pthakur/
+  432  python3
+  433  cd LabGuidelines/timtable/
+  434  ls -ltrh
+  435  pdfunite monday.pdf tuesday.pdf wednesday.pdf thursday.pdf friday.pdf saturday.pdf Lab-RotationConsolidated.pdf
+  436  pdfunite Lab-RotationConsolidated.pdf BSc-MSc.pdf lab-roster.pdf
+  437  cd 
+  438  cd Documents/
+  439  ls -ltrh
+  440  cd Teaching/
+  441  git clone git@github.com:sroychow/marks-mech2080.git
+  442  ls -ltrh
+  443  python3
+  444  cd Downloads/LabGuidelines/
+  445  ls
+  446  cd timtable/
+  447  pdfunite Lab-RotationConsolidated.pdf BSc-MSc.pdf lab-roster.pdf
+  448  ls
+  449  pdfunite monday.pdf tuesday.pdf wednesday.pdf thursday.pdf friday.pdf saturday.pdf Lab-RotationConsolidated.pdf
+  450  pdfunite Lab-RotationConsolidated.pdf BSc-MSc.pdf lab-roster.pdf
+  451  cd ..
+  452  ls
+  453  mkdir evaluation
+  454  cd evaluation/
+  455  ls -ltrh ~/Downloads/
+  456  clear
+  457  emacs -nw batch.json
+  458  ls
+  459  python
+  460  python3
+  461  ifconfig
+  462  cd Downloads/LabGuidelines/
+  463  ls
+  464  cd evaluation/
+  465  ls -ltrh
+  466  pwd
+  467  ls
+  468  cd generated_excels/
+  469  ls -1
+  470  ls -1 > excels.txt
+  471  gedit excels.txt &
+  472  ifconfig
+  473  cd Documents/
+  474  pwd
+  475  cd Booklets/
+  476  source venv/bin/activate
+  477  source booklet/bin/activate
+  478  ls
+  479  python3 doc2latex.py p23.docx p23.tex
+  480  gedit doc2latex.py p23.tex&
+  481  python3 doc2latex.py p23.docx p23.tex
+  482  python3 doc2latex_v2.py p23.docx p23.tex 
+  483  python3 doc2latex.py p23.docx p23.tex 
+  484  ls
+  485  mv doc2latex.py doc2latex.py.saved
+  486  python3 doc2latex.py p23.docx p23.tex 
+  487  python3 doc2latex_v2.py p23.docx p23.tex 
+  488  scp doc2latex_v2.py sroychow@10.9.14.239:~/
+  489  cd Documents/
+  490  ls -ltrh
+  491  cd Booklets/
+  492  source booklet/bin/activate
+  493  python3 doc2latex_v2.py p23.docx p23.tex 
+  494  cd source
+  495  ls
+  496  cd Source/
+  497  nano splitter.py
+  498  python3 doc2latex_v2.py p23.docx p23.tex 
+  499  cd ..
+  500  python3 doc2latex_v2.py p23.docx p23.tex 
+  501  ls -ltrh
+  502  emacs -nw doc2latex_v3.py
+  503  emacs -nw doc2latex_modular.py
+  504  python3 doc2latex_modular.py p23.docx p23.tex 
+  505  pwd
+  506  cd ..
+  507  ls
+  508  scp -r Booklets/ sroychow@10.9.14.239:~/Documents/UPES
+  509  cd  Source
+  510  ls
+  511  cd UG\ PG\ Booklet_2025\ to\ 2029/
+  512  ls
+  513  nano splitter.py
+  514  mkdir split_courses
+  515  source ../../booklet/bin/activate
+  516  python splitter.py 2025-29_Programe\ Handbook_B.Sc\ \(Hons.\)\ Mathematics-1\ Feb\ 2026_M.docx 
+  517  python3 splitter.py 2025-29_Programe\ Handbook_B.Sc\ \(Hons.\)\ Mathematics-1\ Feb\ 2026_M.docx 
+  518  emacs -nw splitter.py 
+  519  python3 splitter.py 2025-29_Programe\ Handbook_B.Sc\ \(Hons.\)\ Mathematics-1\ Feb\ 2026_M.docx 
+  520  cd split_courses/
+  521  ls
+  522  cd ..
+  523  ls -ltrh
+  524  less course_summary.csv 
+  525  cd Documents/
+  526  ls -ltrh
+  527  cd Booklets/
+  528  ls -ltrh
+  529  gedit main.tex preamble/10-courseallocation.tex &
+  530  ifconfig
+  531  cd Documents/
+  532  s
+  533  cls
+  534  ls
+  535  cd Booklets/
+  536  ls
+  537  cd ..
+  538  rm -rf Booklets/
+  539  ls
+  540  sudo apt install texlive-full
+  541  ls -lrth
+  542  cd Booklets/
+  543  ls -ltrh
+  544  cd Source/
+  545  ls -ltrh
+  546  cd bsc_chemistry/
+  547  ls -ltrh
+  548  pdflatex main.tex 
+  549  pdflatex main.tex s
+  550  pdflatex main.tex 
+  551  mv main.pdf bsc_chemistry_v1.pdf
+  552  cd ..
+  553  ls -ltrh
+  554  cd UGPG/
+  555  ls -ltrh
+  556  lx
+  557  ls
+  558  source booklet/bin/activate
+  559  ls -ltrh
+  560  cd Source/
+  561  ls
+  562  cd UGPG/
+  563  ls -ltrh
+  564  mkdir MSc_Physics
+  565  ls
+  566  mkdir split_courses
+  567  python3 ../splitter.py 2025-27_Programe\ Handbook_M.Sc.\ Physics-30_Sep\ 2025_R_050226_Pre\ \(002\)\ 5\ Feb\ 2026.docx 
+  568  ls
+  569  mv split_courses/*.docx MSc_Physics/
+  570  cd ../
+  571  ls
+  572  mkdir bsc_physics
+  573  mkdir msc_physics
+  574  cp -r bsc_physics/ msc_physics/
+  575  cp -r bsc_physics/sem1/ msc_physics/
+  576  cp -r bsc_physics/sem2/ msc_physics/
+  577  cp -r bsc_physics/sem3/ msc_physics/
+  578  cp -r bsc_physics/sem4/ msc_physics/
+  579  cp -r bsc_physics/figure/ msc_physics/
+  580  cp -r bsc_physics/main.tex msc_physics/
+  581  cd msc_physics/
+  582  ls
+  583  cd sem1/
+  584  ls
+  585  mv start-page.tex start-page.tex.saved
+  586  rm *.tex
+  587  mv start-page.tex.saved start-page.tex
+  588  cd ..
+  589  cd ../..
+  590  cd Source/
+  591  ;s
+  592  ls
+  593  cd UGPG/
+  594  ls -ltrh
+  595  cd MSc_Physics/
+  596  ls
+  597  mkdir docx
+  598  mkdir texfiles
+  599  mv *.docx docx/
+  600  python3 ../../../doc2latex_modular-v2.py docx/ texfiles/
+  601  python3 ../../batch-convert.py docx/ texfiles/
+  602  python ../../batch-convert.py docx/ texfiles/
+  603  python3 ../../batch-convert.py docx/ texfiles/
+  604  ls
+  605  cd ..
+  606  ls
+  607  history
+  608  cd msc_physics/
+  609  mv bsc_physics/preamble/ .
+  610  mv bsc_physics/figure/ .
+  611  ls
+  612  rm -rf bsc_physics/
+  613  gedit texfiles/PHYS7030_Quantum_Mechanics.tex
+  614  cd ..
+  615  ls
+  616  mkdir msc_chemistry
+  617  cd msc_chemistry/
+  618  cp -r ../bsc_chemistry/figure/ .
+  619  cp -r ../bsc_chemistry/preamble/ .
+  620  cp -r ../bsc_chemistry/main.tex .
+  621  ls
+  622  ls ../UGPG/split_courses/
+  623  cp -r ../UGPG/MSc_Chemistry/texfiles/ .
+  624  ls -ltrh
+  625  cp ../bsc_chemistry/sem1/start-page.tex texfiles/sem1.tex
+  626  cp ../bsc_chemistry/sem2/start-page.tex texfiles/sem2.tex
+  627  cp ../bsc_chemistry/sem3/start-page.tex texfiles/sem3.tex
+  628  cp ../bsc_chemistry/sem4/start-page.tex texfiles/sem4.tex
+  629  gedit main.tex &
+  630  cd texfiles/
+  631  cp sem4.tex organic.tex
+  632  emacs -nw organic.tex 
+  633  cp organic.tex polymer.tex
+  634  emacs -nw polymer.tex 
+  635  cp organic.tex ica.tex
+  636  emacs -nw ica.tex 
+  637  ls
+  638  source booklet/bin/activate
+  639  python3
+  640  python3 Source/batch-convert.py 
+  641  cd Source/
+  642  ls
+  643  cd UGPG/MSc_Physics/
+  644  python3 ../../batch-convert.py docx/ texfiles/
+  645  python3 ../../batch-convert.py ./docx/ ./texfiles/
+  646  gedit /home/sroychow/Documents/Booklets/Source/UGPG/MSc_Physics/../../batch-convert.py &
+  647  python3 ../../batch-convert.py ./docx/ ./texfiles/
+  648  ls
+  649  ls docx/
+  650  python3 ../../batch-convert.py ./docx/ ./texfiles/
+  651  ls
+  652  cp -r texfiles/ ../../msc_physics/
+  653  ls -ltrh
+  654  cd ../../
+  655  cd -
+  656  cd ../
+  657  LS
+  658  ls MSc_Physics/
+  659  ls
+  660  cd MSc_Physics/
+  661  ls
+  662  ls docx/
+  663  ls texfiles/
+  664  ls
+  665  cd ..
+  666  ls
+  667  mkdir MSc_Maths
+  668  cd MSc_Maths/
+  669  cd ..
+  670  rm split_courses/*
+  671  ls split_courses/
+  672  python3 ../splitter.py 2025-27_Programe\ Handbook_M.Sc.\ Mathematics-4\ Feb\ 2026_M.docx 
+  673  ls
+  674  cd MSc_Maths/
+  675  ls
+  676  mv ../split_courses/*.docx .
+  677  ls
+  678  mkdir docx
+  679  mv *.docx docx/
+  680  mkdir texfiles
+  681  ls
+  682  python3 ../../batch-convert.py docx/ texfiles/
+  683  ls -ltrh
+  684  cd ../..
+  685  ls
+  686  mkdir msc_maths
+  687  cd msc_maths/
+  688  cp -r ../bsc_maths/figure/ .
+  689  cp -r ../bsc_maths/preamble/ .
+  690  cp -r ../bsc_maths/main.tex .
+  691  cp -r ../UGPG/MSc_Maths/texfiles/ .
+  692  ls
+  693  cp -r ../bsc_maths/sem1/start-page.tex texfiles/sem1.tex
+  694  cp -r ../bsc_maths/sem2/start-page.tex texfiles/sem2.tex
+  695  cp -r ../bsc_maths/sem3/start-page.tex texfiles/sem3.tex
+  696  cp -r ../bsc_maths/sem4/start-page.tex texfiles/sem4.tex
+  697  gedit main.tex 
+  698  gedit main.tex &
+  699  cd ..
+  700  ls
+  701  cd UGPG/
+  702  ls
+  703  cd split_courses
+  704  ls
+  705  cd ..
+  706  python3 ../splitter.py 2025-27_Programe\ Handbook_M.Sc.\ Chemistry-30_Sep\ 2025_R.docx 
+  707  ls -ltrh
+  708  mkdir MSc_Chemistry
+  709  cd MSc_Chemistry/
+  710  ls
+  711  mkdir docx
+  712  mv ../split_courses/* docx/
+  713  ls -ltrh
+  714  mkdir texfiles
+  715  python3 ../../batch-convert.py docx/ texfiles/
+  716  ls
+  717  source ../venv/bin/activate
+  718  ls
+  719  cd nmf_med_anomaly/
+  720  cd ..
+  721  ls -ltrh
+  722  cd dataset2/
+  723  ls
+  724  mkdir output
+  725  cd ../
+  726  ls
+  727  cd nmf_med_anomaly/
+  728  ls -ltrh
+  729  python3 train.py --help
+  730  pip install joblb
+  731  pip install joblib
+  732  cd 
+  733  ls -ltrh
+  734  source venv/bin/activate
+  735  ls
+  736  pip 
+  737  pip list
+  738  cd ..
+  739  cd -
+  740  pip install --user joblib
+  741  source ~/venv/bin/activate
+  742  ls
+  743  cd medimaging/
+  744  ls
+  745  cd nmf_med_anomaly/
+  746  python train.py  --help
+  747  python train.py   --base /home/sroychow/medimaging/dataset1   --out  /home/sroychow/medimaging/outputs_centered_local_k100   --norm-mode local   --local-block 8   --k-list 100   --score blockwise   --block 16   --agg topk_mean   --topk 4   --thr-quantile 0.99   --save-advanced-stats
+  748  python evaluate.py   --model "/home/sroychow/medimaging/outputs_centered_local_k100/models/nmf_k100.joblib"   --base  /home/sroychow/medimaging/dataset1   --out   "/home/sroychow/medimaging/outputs_centered_local_k100/evals/eval_k100_testing"   --use testing   --score-mode residual_z_topk   --block 16 --topk 4   --blockstats "/home/sroychow/medimaging/outputs_centered_local_k100/models/blockstats_k100.json"   --val-errors "/home/sroychow/medimaging/outputs_centered_local_k100/models/val_errors_k100.npy"   --threshold-mode quantile --thr-quantile 0.99
+  749  ls -ltrh
+  750  python evaluate.py   --model "/home/sroychow/cms/tkdqm/medimaging/outputs_centered_local_k100/models/nmf_k100.joblib"   --base  /home/sroychow/cms/tkdqm/medimaging/dataset1   --out   "/home/sroychow/cms/tkdqm/medimaging/outputs_centered_local_k100/evals/eval_k100_bestF1_testing"   --use testing   --score-mode residual_z_topk   --block 16 --topk 4   --blockstats "/home/sroychow/cms/tkdqm/medimaging/outputs_centered_local_k100/models/blockstats_k100.json"   --threshold-mode best_f1   --also-best-f1
+  751  python evaluate.py   --model "/home/sroychow/medimaging/outputs_centered_local_k100/models/nmf_k100.joblib"   --base  /home/sroychow/medimaging/dataset1   --out   "/home/sroychow/medimaging/outputs_centered_local_k100/evals/eval_k100_bestF1_testing"   --use testing   --score-mode residual_z_topk   --block 16 --topk 4   --blockstats "/home/sroychow/medimaging/outputs_centered_local_k100/models/blockstats_k100.json"   --threshold-mode best_f1   --also-best-f1
+  752  ls -ltrh
+  753  python evaluate.py   --model "/home/sroychow/medimaging/outputs_centered_local_k100/models/nmf_k100.joblib"   --base  /home/sroychow/medimaging/dataset1   --out   "/home/sroychow/medimaging/outputs_centered_local_k100/evals/eval_k100_youden_testing"   --use testing   --score-mode residual_z_topk   --block 16 --topk 4   --blockstats "/home/sroychow/medimaging/outputs_centered_local_k100/models/blockstats_k100.json"   --threshold-mode youden
+  754  python evaluate.py   --model "/home/sroychow/medimaging/outputs_centered_local_k100/models/nmf_k100.joblib"   --base  /home/sroychow/medimaging/dataset1   --out   "/home/sroychow/medimaging/outputs_centered_local_k100/evals/eval_gradZ_topk_k100_youden_testing"   --use testing   --score-mode residual_grad_z_topk   --block 16 --topk 4   --blockstats "/home/sroychow/medimaging/outputs_centered_local_k100/models/blockstats_k100.json"   --threshold-mode youden
+  755  ls -ltrh
+  756  emacs -nw evaluate.py
+  757  gedit evaluate.py
+  758  gedit train.py
+  759  python train.py   --base /home/sroychow/medimaging/data   --out /home/sroychow/medimaging/outputs_centered_local_k100   --img-size 128   --norm-mode local   --local-block 8   --k-list 100   --block 16   --agg max   --topk 4   --save-advanced-stats
+  760  python train.py   --base /home/sroychow/medimaging/dataset1/   --out /home/sroychow/medimaging/outputs_centered_local_k100   --img-size 128   --norm-mode local   --local-block 8   --k-list 100   --block 16   --agg max   --topk 4   --save-advanced-stats
+  761  python evaluate.py   --model /home/sroychow/medimaging/outputs_centered_local_k100/models/nmf_k100.joblib   --base /home/sroychow/medimaging/dataset1/   --out /home/sroychow/medimaging/outputs_centered_local_k100/eval_blockstats_grad_k100   --use testing   --score-mode residual_grad_z_topk   --block 16 --topk 4   --blockstats //home/sroychow/medimaging/outputs_centered_local_k100/models/blockstats_grad_k100.json   --threshold-mode youden
+  762  ls -ltrh /home/sroychow/medimaging/outputs_centered_local_k100/eval_blockstats_grad_k100
+  763  python evaluate.py   --model /home/sroychow/medimaging/outputs_centered_local_k100/models/nmf_k100.joblib   --base /home/sroychow/medimaging/dataset1/   --out /home/sroychow/medimaging/outputs_centered_local_k100/eval_blockstats_residual_z_topk_edgegate   --use testing   --score-mode residual_z_topk_edgegate   --block 16 --topk 4   --blockstats //home/sroychow/medimaging/outputs_centered_local_k100/models/blockstats_grad_k100.json   --threshold-mode youden
+  764  less ../nmf_med_anomaly_patched/run.sh
+  765  ls /home/sroychow/medimaging/dataset1/Training/
+  766  less ../nmf_med_anomaly_patched/run.sh
+  767  rm -rf /home/sroychow/medimaging/outputs_centered_local_k100
+  768  python train.py   --root /home/sroychow/medimaging/dataset1/Training   --k 100   --out /home/sroychow/medimaging/outputs_centered_local_k100   --score_mode residual_z_topk_edgegate   --block 16   --topk 4   --alpha 0.7
+  769  python train.py   --base /home/sroychow/medimaging/dataset1/Training   --k 100   --out /home/sroychow/medimaging/outputs_centered_local_k100   --score_mode residual_z_topk_edgegate   --block 16   --topk 4   --alpha 0.7
+  770  gedit train.py
+  771  python evaluate.py   --model /home/sroychow/medimaging/outputs_centered_local_k100/models/nmf_k100.joblib   --base /home/sroychow/medimaging/dataset1/   --out /home/sroychow/medimaging/outputs_centered_local_k100/eval   --use testing   --score-mode residual_z_topk_edgegate  --block 16 --topk 4  --alpha 0.7  --blockstats //home/sroychow/medimaging/outputs_centered_local_k100/models/blockstats_k100.json  --threshold-mode youden
+  772  python train.py   --base /home/sroychow/medimaging/dataset1/Training   --k 100   --out /home/sroychow/medimaging/outputs_k100_block32 -norm-mode local --local-block 8  --score global_mean  --score_mode residual_z_topk_edgegate   --block 32   --topk 6 --thr-quantile 0.99   --save-advanced-stats   
+  773  python train.py   --base /home/sroychow/medimaging/dataset1/Training   --k 100   --out /home/sroychow/medimaging/outputs_k100_block32 -norm-mode local --local-block 8  --score global_mean  --block 32   --topk 6 --thr-quantile 0.99   --save-advanced-stats   
+  774  python train.py   --base /home/sroychow/medimaging/dataset1/Training   --k 100   --out /home/sroychow/medimaging/outputs_k100_block32 --norm-mode local --local-block 8  --score global_mean  --block 32   --topk 6 --thr-quantile 0.99   --save-advanced-stats   
+  775  python train.py   --base /home/sroychow/medimaging/dataset1/   --k 100   --out /home/sroychow/medimaging/outputs_k100_block32 --norm-mode local --local-block 8  --score global_mean  --block 32   --topk 6 --thr-quantile 0.99   --save-advanced-stats   
+  776  python evaluate.py   --model /home/sroychow/medimaging/outputs_k100_block32/   --base /home/sroychow/medimaging/dataset1/   --out /home/sroychow/medimaging/outputs_k100_block32/eval   --use testing    --block 32 --topk 6  --blockstats //home/sroychow/medimaging/outputs_k100_block32/  --threshold-mode youden --score-mode residual_z_topk_edgegate --res-agg quantile --res-q 0.99
+  777  python evaluate.py   --model /home/sroychow/medimaging/outputs_k100_block32/   --base /home/sroychow/medimaging/dataset1/   --out /home/sroychow/medimaging/outputs_k100_block32/eval   --use testing    --block 32 --topk 6  --blockstats //home/sroychow/medimaging/outputs_k100_block32/models/blockstats_k100.json  --threshold-mode youden --score-mode residual_z_topk_edgegate --res-agg quantile --res-q 0.99
+  778  python evaluate.py   --model /home/sroychow/medimaging/outputs_k100_block32/models/nmf_k100.joblib   --base /home/sroychow/medimaging/dataset1/   --out /home/sroychow/medimaging/outputs_k100_block32/eval   --use testing    --block 32 --topk 6  --blockstats //home/sroychow/medimaging/outputs_k100_block32/models/blockstats_k100.json  --threshold-mode youden --score-mode residual_z_topk_edgegate --res-agg quantile --res-q 0.99
+  779  ls -ltrh
+  780  ls -ltrh ../
+  781  cd ..
+  782  cd dataset1/
+  783  ls -ltrh
+  784  cd outputs_patchnmf_batched/
+  785  ls -ltrh models/
+  786  cd ..
+  787  ls -ltrh
+  788  cd outputs_patchnmf_normlocal/models/
+  789  ls -ltrh
+  790  cd ..
+  791  emacs -nw splits.json 
+  792  cd ../
+  793  cd ..
+  794  ls
+  795  ls -ltrh
+  796  source ~/venv/bin/activate
+  797  clear
+  798  ls -ltrh
+  799  python train.py  --help
+  800  python train.py  --base /home/sroychow/medimaging/dataset2/Brain_Stroke_CT_Dataset/Normal/ --norm-mode local --local-block 8 --thr-quantile 0.99 --score blockwise   --block 16   --agg topk_mean   --topk 4   --thr-quantile 0.99   --save-advanced-stats --out /home/sroychow/medimaging/dataset2/outputs_centered/ --k-list 30,35,40,45,50,55,60,70,75,85,100,120,150,200
+  801  top
+  802  ls -ltrh //home/sroychow/medimaging/outputs_centered_local_k100/models/
+  803  pip install joblib
+  804  htop
+  805  ls -ltrh /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched
+  806  ls -ltrh /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/
+  807  python train.py   --base /home/sroychow/medimaging/dataset1   --out /home/sroychow/medimaging/outputs_centered_local_k100   --img-size 128   --norm-mode local   --local-block 8   --k-list 100   --score global_mean   --block 16   --agg max   --topk 4   --save-advanced-stats
+  808  python evaluate.py   --model /home/sroychow/medimaging/outputs_centered_local_k100/models/nmf_k100.joblib   --blockstats /home/sroychow/medimaging/outputs_centered_local_k100/models/blockstats_k100.json   --score residual_z_topk_edgegate   --block 16   --topk 4   --alpha 0.7 --out /home/sroychow/medimaging/outputs_centered_local_k100/eval/
+  809  #python train.py   --base /home/sroychow/medimaging/dataset1   --out /home/sroychow/medimaging/outputs_centered_local_k100   --img-size 128   --norm-mode local   --local-block 8   --k-list 100   --score global_mean   --block 16   --agg max   --topk 4   --save-advanced-statsls
+  810  ls /home/sroychow/medimaging/outputs_centered_local_k100/models/nmf_k100.joblib
+  811  top
+  812  cd ..
+  813  ls -ltrh
+  814  cd dataset1/
+  815  ls -ltrh
+  816  cd outputs_patchnmf_batched/
+  817  ls -ltrh
+  818  ls -ltrh models/
+  819  cd ../..
+  820  ls
+  821  cd nmf_med_anomaly_patched/
+  822  ls -ltrh
+  823  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib \
+  824    --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json" \
+  825    --base /home/sroychow/medimaging/dataset1 \
+  826    --use testing \
+  827    --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/evals_k100/   --agg quantile --q 0.995   --threshold-mode best_f1
+  828  ls
+  829  mv evaluate-patch.py evaluate_patch.py 
+  830  mv reconstruct-patch.py reconstruct_patch.py 
+  831  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib \
+  832    --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json" \
+  833    --base /home/sroychow/medimaging/dataset1 \
+  834    --use testing \
+  835    --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/evals_k100/   --agg quantile --q 0.995   --threshold-mode best_f1
+  836  ls nmfcore/
+  837  cd nmfcore/
+  838  mv metrices.py metrics.py 
+  839  cd ..
+  840  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib \
+  841    --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json" \
+  842    --base /home/sroychow/medimaging/dataset1 \
+  843    --use testing \
+  844    --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/evals_k100/   --agg quantile --q 0.995   --threshold-mode best_f1
+  845  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib  --blockstats /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json --base /home/sroychow/medimaging/dataset1 --use testing --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/evals_k100/ -agg quantile --q 0.995   --threshold-mode best_f1
+  846  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib  --blockstats /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json --base /home/sroychow/medimaging/dataset1 --use testing --out /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/evals_k100/ -agg quantile --q 0.995   --threshold-mode best_f1
+  847  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib  --blockstats /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json --base /home/sroychow/medimaging/dataset1 --use testing --out /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/evals_k100/ --agg quantile --q 0.995   --threshold-mode best_f1
+  848  python evaluate_patch.py   --model "/home/sroychow/cms/tkdqm/medimaging/outputs_patchnmf/models/patchnmf_k100.joblib"   --blockstats "/home/sroychow/cms/tkdqm/medimaging/outputs_patchnmf/models/blockstats_k100.json"   --base /home/sroychow/cms/tkdqm/medimaging/dataset1   --use testing   --out "/home/sroychow/cms/tkdqm/medimaging/outputs_patchnmf/evals/eval_k100"   --agg quantile --q 0.995   --threshold-mode best_f1
+  849  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib"   --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json"   --base /home/sroychow/cms/tkdqm/medimaging/dataset1   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/eval_k100"   --agg quantile --q 0.995   --threshold-mode best_f1
+  850  ls /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib
+  851  ls /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json
+  852  ls /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/eval_k100
+  853  cd /home/sroychow/cms/tkdqm/medimaging/nmf_med_anomaly
+  854  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib"   --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json"   --base "/home/sroychow/cms/tkdqm/medimaging/dataset1"   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/eval_k100"   --block 16   --agg quantile --q 0.995   --threshold-mode best_f1
+  855  ls /home/sroychow/cms/tkdqm/medimaging/d
+  856  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib"   --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json"   --base "/home/sroychow/medimaging/dataset1"   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/eval_k100"   --block 16   --agg quantile --q 0.995   --threshold-mode best_f1
+  857  python reconstruct_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib"   --base /home/sroychow/medimaging/dataset1   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/recons/k100"
+  858  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib"   --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json"   --base "/home/sroychow/medimaging/dataset1"   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/eval_k100"   --block 16   --agg quantile --q 0.995   --threshold-mode best_f1 --debug-dir "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/eval_k100/" --debug-n 10 --debug-zthr 3.0
+  859  emacs -nw run.sh
+  860  #python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib"   --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/blockstats_k100.json"   --base "/home/sroychow/medimaging/dataset1"   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/eval_k100"   --block 16   --agg quantile --q 0.995   --threshold-mode best_f1 --debug-dir "/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/evals/eval_k100/" --debug-n 10 --debug-zthr 3.0
+  861  emacs -nw run.sh
+  862  sh run.sh 2
+  863  emacs -nw run.sh
+  864  sh run.sh 2
+  865  kill -9 %1
+  866  cat run.sh
+  867  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/"   --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/"   --base "/home/sroychow/medimaging/dataset1"   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/evals/eval_k100"   --block 16   --agg quantile --q 0.995   --threshold-mode best_f1 --debug-dir "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/evals/eval_k100/" --debug-n 10 --debug-zthr 3.0
+  868  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/models/patchnmf_k100.joblib"   --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/"   --base "/home/sroychow/medimaging/dataset1"   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/evals/eval_k100"   --block 16   --agg quantile --q 0.995   --threshold-mode best_f1 --debug-dir "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/evals/eval_k100/" --debug-n 10 --debug-zthr 3.0
+  869  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/models/patchnmf_k100.joblib"   --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/models/blockstats_k100.json"   --base "/home/sroychow/medimaging/dataset1"   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/evals/eval_k100"   --block 16   --agg quantile --q 0.995   --threshold-mode best_f1 --debug-dir "/home/sroychow/medimaging/dataset1/outputs_patchnmf_normlocal/evals/eval_k100/" --debug-n 10 --debug-zthr 3.0
+  870  gedit nmfcore/config.py nmfcore/data.py nmfcore/metrics.py nmfcore/model_patch.py nmfcore/patches.py nmfcore/preprocess.py 
+  871  python train_patch.py   --base /home/sroychow/medimaging/dataset1   --out  /home/sroychow/medimaging/dataset1/outputs_patchnmf_global   --norm-mode global   --patch 16 --stride 8   --k-list "100"   --ncore 6 --io-ncore 6
+  872  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_global/models/patchnmf_k100.joblib"   --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_global/models/blockstats_k100.json"   --base /home/sroychow/cms/tkdqm/medimaging/dataset1   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_global/evals/eval_k100"   --agg quantile --q 0.995 --block 16   --threshold-mode best_f1   --io-ncore 6   --debug-dir "/home/sroychow/medimaging/dataset1/outputs_patchnmf_global/evals/eval_k100/debug"   --debug-n 10 --debug-zthr 3.0
+  873  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_global/models/patchnmf_k100.joblib"   --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_global/models/blockstats_k100.json"   --base /home/sroychow/medimaging/dataset1   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_global/evals/eval_k100"   --agg quantile --q 0.995 --block 16   --threshold-mode best_f1   --io-ncore 6   --debug-dir "/home/sroychow/medimaging/dataset1/outputs_patchnmf_global/evals/eval_k100/debug"   --debug-n 10 --debug-zthr 3.0
+  874  ls -ltrh
+  875  python train_patch.py   --base /home/sroychow/medimaging/dataset1   --out  /home/sroychow/medimaging/dataset1/outputs_patchnmf_local8   --norm-mode local --local-block 8   --patch 16 --stride 8   --k-list "75,100"   --ncore 6 --io-ncore 6
+  876  emacs -nw train_patch.py 
+  877  python train_patch.py   --base /home/sroychow/medimaging/dataset1   --out  /home/sroychow/medimaging/dataset1/outputs_patchnmf_local8   --norm-mode local --local-block 8   --patch 16 --stride 8   --k-list "75,100"   --ncore 6 --io-ncore 6
+  878  pwd
+  879  cd ..
+  880  ifconfig
+  881  ls -ltrh
+  882  scp -r nmf_med_anomaly_patched/ sroychow@10.42.0.1:~/
+  883  scp -r dataset2/ sroychow@10.42.0.1:~/
+  884  python reconstruct_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_local8/models/patchnmf_k100.joblib"   --base  /home/sroychow/medimaging/dataset1   --use testing   --out   "/home/sroychow/medimaging/dataset1/outputs_patchnmf_local8/reconstruction_k100"   --io-ncore 6   --save-n 20
+  885  cd nmf_med_anomaly_patched/
+  886  python reconstruct_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_local8/models/patchnmf_k100.joblib"   --base  /home/sroychow/medimaging/dataset1   --use testing   --out   "/home/sroychow/medimaging/dataset1/outputs_patchnmf_local8/reconstruction_k100"   --io-ncore 6   --save-n 20
+  887  python evaluate_patch.py   --model "/home/sroychow/medimaging/dataset1/outputs_patchnmf_local8/models/patchnmf_k100.joblib"   --blockstats "/home/sroychow/medimaging/dataset1/outputs_patchnmf_local8/models/blockstats_k100.json"   --base /home/sroychow/medimaging/dataset1   --use testing   --out "/home/sroychow/medimaging/dataset1/outputs_patchnmf_local8/evals/eval_k100"   --agg quantile   --q 0.995   --block 16   --threshold-mode best_f1   --io-ncore 6   --debug-dir "/home/sroychow/medimaging/dataset1/outputs_patchnmf_local8/evals/eval_k100/debug"   --debug-n 10   --debug-zthr 3.0
+  888  ifconfig
+  889  cd 
+  890  ls -tlrh
+  891  cd nmf_med_anomaly_patched/
+  892  gedit train_patch.py 
+  893  ifconfig
+  894  ls
+  895  ls -ltrh
+  896  clear
+  897  pwd
+  898  ls -ltrehg
+  899  ls -ltrh
+  900  ls -ltrhy
+  901  cd SEED/
+  902  ls
+  903  cd ..
+  904  ifconfig
+  905  cd medimaging/
+  906  ls
+  907  cd nmf_med_anomaly/
+  908  ls
+  909  cd ../
+  910  ls
+  911  ls ../
+  912  cd dataset2/
+  913  nano dsetinfo.txt
+  914  cd ..
+  915  ls -ltrh
+  916  ls
+  917  cd ..
+  918  ls
+  919  rm -rf venv/
+  920  python3 -m venv venv
+  921  source venv/bin/activate
+  922  pip install --user joblib
+  923  pip install joblib
+  924  pip install numpy
+  925  pip install matplotlib
+  926  pip install skilearn
+  927  pip install sklearn
+  928  pip install scikit-learn
+  929  cd medimaging/
+  930  cd nmf_med_anomaly/
+  931  ls
+  932  gedit nmfcore/preprocess.py &
+  933  gedit nmfcore/config.py 
+  934  htop
+  935  ls
+  936  cd ..
+  937  mkdir nmf_med_anomaly_patched
+  938  cd nmf_med_anomaly_patched/
+  939  mkdir nmfcore
+  940  emacs -nw nmfcore/config.py
+  941  emacs -nw nmfcore/data.py
+  942  emacs -nw nmfcore/preprocess.py
+  943  emacs -nw nmfcore/patches.py
+  944  emacs -nw nmfcore/models-patch.py
+  945  emacs -nw nmfcore/metrices.py
+  946  emacs -nw train-patch.py
+  947  emacs -nw reconstruct-patch.py
+  948  emacs -nw evaluate-patch.py
+  949  emacs -nw run.sh
+  950  sh run.sh 1
+  951  emacs -nw run.sh
+  952  sh run.sh 1
+  953  emacs -nw run.sh
+  954  sh run.sh 1
+  955  emacs -nw run.sh
+  956  sh run.sh 1
+  957  emacs -nw run.sh
+  958  sh run.sh 1
+  959  emacs -nw run.sh
+  960  sh run.sh 
+  961  emacs -nw run.sh
+  962  sh run.sh 
+  963  emacs -nw run.sh
+  964  sh run.sh 1
+  965  ls
+  966  mv train-patch.py train_patch.py 
+  967  sh run.sh 1
+  968  cd nmfcore/
+  969  ls
+  970  less models-patch.py 
+  971  mv models-patch.py model_patch.py 
+  972  cd ..
+  973  sh run.sh 1
+  974  less run.sh
+  975  gedit train_patch.py 
+  976  python train_patch.py   --base /home/sroychow/medimaging/dataset1/   --out  /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched   --norm-mode global   --patch 16 --stride 8   --block 16   --k-list 10,20,30,50,75,100,150,200,250,300   --max-iter 800   --max-patches 250000   --ncore 10
+  977  kill -9 %2
+  978  kill -9 %1
+  979  python train_patch.py   --base /home/sroychow/medimaging/dataset1/   --out  /home/sroychow/medimaging/dataset1/outputs_patchnmf_batched   --norm-mode global   --patch 16 --stride 8   --block 16   --k-list 10,20,30,50,75,100,150,200,250,300   --max-iter 800   --max-patches 250000   --ncore 5
+  980  kill -9 %1
+  981  top 
+  982  htop
+  983  python -c "import joblib; b=joblib.load('/home/sroychow/medimaging/dataset1/outputs_patchnmf_batched/models/patchnmf_k100.joblib'); print('normal_class=', b.cfg.normal_class)"
+  984  python train_patch.py -base /home/sroychow/medimaging/dataset2/Brain_Stroke_CT_Dataset/Normal/ --out /home/sroychow/medimaging/dataset2/output_patchnmf_local/ --norm-mode local --local-block 16  --patch 16 --stride 8 --block 16 --k-list 100 --max-iter 800 --max-patches 250000 
+  985  python train_patch.py --base /home/sroychow/medimaging/dataset2/Brain_Stroke_CT_Dataset/Normal/ --out /home/sroychow/medimaging/dataset2/output_patchnmf_local/ --norm-mode local --local-block 16  --patch 16 --stride 8 --block 16 --k-list 100 --max-iter 800 --max-patches 250000 
+  986  top
+  987  source ~/venv/bin/activate
+  988  cd nmf_med_anomaly_patched/
+  989  ls -ltrh
+  990  python train_patch.py --base ~/dataset2/Brain_Stroke_CT_Dataset/ --out ~/dataset2/output_patchnmf_local8/ --norm-mode local --local-block 8 --patch 16 --stride 8 --k-list 10,20,30,50,60,70,75,85,100,120,150 --ncore 8 --io-ncore 8
+  991  #python evaluate_hybrid_patch_anomaly_stable.py \
+  992  ls ~/dataset2/output_patchnmf_local8/
+  993  ls ~/dataset2/output_patchnmf_local8/models/
+  994  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/  --train-normal  Training/notumor  --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k100_stable/ \
+  995  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/  --train-normal  Training/notumor  --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k100.joblib  --out  ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k100_stable --norm-mode local --local-block 8   --block 16   --score-mode quantile --score-quantile 0.995   --use-stable-score --drop-border 1 --top-p 0.95   --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k100/eval_hybrid_k100_stable/calib.json
+  996  for ss in 10 20 30 50 60 70 75 85 100 120 150; do python evaluate_hybrid_patch_anomaly_stable.py --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/  --train-normal  Training/notumor  --test-normal Testing/notumor --test-anom Testing/Ischemia --model "~/dataset2/output_patchnmf_local8/models/patchnmf_k"$ss".joblib"  --out  "~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k"$ss"_stable" --norm-mode local --local-block 8   --block 16   --score-mode quantile --score-quantile 0.995   --use-stable-score --drop-border 1 --top-p 0.95   --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib "~/dataset2/output_patchnmf_local8/eval_struct_res_k"$ss"/eval_hybrid_k100_stable/calib.json"; done
+  997  ls ~/dataset2/output_patchnmf_local8/models/
+  998  for ss in 10 20 30 50 60 70 75 85 100 120 150; do echo python evaluate_hybrid_patch_anomaly_stable.py --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/  --train-normal  Training/notumor  --test-normal Testing/notumor --test-anom Testing/Ischemia --model "~/dataset2/output_patchnmf_local8/models/patchnmf_k"$ss".joblib"  --out  "~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k"$ss"_stable" --norm-mode local --local-block 8   --block 16   --score-mode quantile --score-quantile 0.995   --use-stable-score --drop-border 1 --top-p 0.95   --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib "~/dataset2/output_patchnmf_local8/eval_struct_res_k"$ss"/eval_hybrid_k100_stable/calib.json"; done
+  999  for ss in 10 20 30 50 60 70 75 85 100 120 150; do echo python evaluate_hybrid_patch_anomaly_stable.py --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/  --train-normal  Training/notumor  --test-normal Testing/notumor --test-anom Testing/Ischemia --model "~/dataset2/output_patchnmf_local8/models/patchnmf_k"$ss".joblib"  --out  "~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k"$ss"_stable" --norm-mode local --local-block 8   --block 16   --score-mode quantile --score-quantile 0.995   --use-stable-score --drop-border 1 --top-p 0.95   --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib "~/dataset2/output_patchnmf_local8/eval_struct_res_k"$ss"/eval_hybrid_k100_stable/calib.json"; echo ""; echo "";done
+ 1000  for ss in 10 20 30 50 60 70 75 85 100 120 150; do echo python evaluate_hybrid_patch_anomaly_stable.py --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/  --train-normal  Training/notumor  --test-normal Testing/notumor --test-anom Testing/Ischemia --model "~/dataset2/output_patchnmf_local8/models/patchnmf_k"$ss".joblib"  --out  "~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k"$ss"_stable" --norm-mode local --local-block 8   --block 16   --score-mode quantile --score-quantile 0.995   --use-stable-score --drop-border 1 --top-p 0.95   --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib "~/dataset2/output_patchnmf_local8/eval_struct_res_k"$ss"/eval_hybrid_k"ss"_stable/calib.json"; done
+ 1001  for ss in 10 20 30 50 60 70 75 85 100 120 150; do echo python evaluate_hybrid_patch_anomaly_stable.py --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/  --train-normal  Training/notumor  --test-normal Testing/notumor --test-anom Testing/Ischemia --model "~/dataset2/output_patchnmf_local8/models/patchnmf_k"$ss".joblib"  --out  "~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k"$ss"_stable" --norm-mode local --local-block 8   --block 16   --score-mode quantile --score-quantile 0.995   --use-stable-score --drop-border 1 --top-p 0.95   --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib "~/dataset2/output_patchnmf_local8/eval_struct_res_k"$ss"/eval_hybrid_k"ss"_stable/calib.json"; echo "";done
+ 1002  clear
+ 1003  for ss in 10 20 30 50 60 70 75 85 100 120 150; do echo ""; echo python evaluate_hybrid_patch_anomaly_stable.py --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/  --train-normal  Training/notumor  --test-normal Testing/notumor --test-anom Testing/Ischemia --model "~/dataset2/output_patchnmf_local8/models/patchnmf_k"$ss".joblib"  --out  "~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k"$ss"_stable" --norm-mode local --local-block 8   --block 16   --score-mode quantile --score-quantile 0.995   --use-stable-score --drop-border 1 --top-p 0.95   --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib "~/dataset2/output_patchnmf_local8/eval_struct_res_k"$ss"/eval_hybrid_k"$ss"_stable/calib.json"; echo ""; done
+ 1004  clear
+ 1005  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/ --train-normal Training/notumor --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k10.joblib --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k10_stable --norm-mode local --local-block 8 --block 16 --score-mode quantile --score-quantile 0.995 --use-stable-score --drop-border 1 --top-p 0.95 --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k10/eval_hybrid_k10_stable/calib.json
+ 1006  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/ --train-normal Training/notumor --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k20.joblib --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k20_stable --norm-mode local --local-block 8 --block 16 --score-mode quantile --score-quantile 0.995 --use-stable-score --drop-border 1 --top-p 0.95 --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k20/eval_hybrid_k20_stable/calib.json
+ 1007  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/ --train-normal Training/notumor --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k30.joblib --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k30_stable --norm-mode local --local-block 8 --block 16 --score-mode quantile --score-quantile 0.995 --use-stable-score --drop-border 1 --top-p 0.95 --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k30/eval_hybrid_k30_stable/calib.json\
+ 1008  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/ --train-normal Training/notumor --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k30.joblib --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k30_stable --norm-mode local --local-block 8 --block 16 --score-mode quantile --score-quantile 0.995 --use-stable-score --drop-border 1 --top-p 0.95 --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k30/eval_hybrid_k30_stable/calib.json
+ 1009  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/ --train-normal Training/notumor --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k50.joblib --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k50_stable --norm-mode local --local-block 8 --block 16 --score-mode quantile --score-quantile 0.995 --use-stable-score --drop-border 1 --top-p 0.95 --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k50/eval_hybrid_k50_stable/calib.json
+ 1010  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/ --train-normal Training/notumor --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k60.joblib --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k60_stable --norm-mode local --local-block 8 --block 16 --score-mode quantile --score-quantile 0.995 --use-stable-score --drop-border 1 --top-p 0.95 --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k60/eval_hybrid_k60_stable/calib.json
+ 1011  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/ --train-normal Training/notumor --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k75.joblib --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k75_stable --norm-mode local --local-block 8 --block 16 --score-mode quantile --score-quantile 0.995 --use-stable-score --drop-border 1 --top-p 0.95 --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k75/eval_hybrid_k75_stable/calib.json
+ 1012  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/ --train-normal Training/notumor --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k85.joblib --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k85_stable --norm-mode local --local-block 8 --block 16 --score-mode quantile --score-quantile 0.995 --use-stable-score --drop-border 1 --top-p 0.95 --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k85/eval_hybrid_k85_stable/calib.json
+ 1013  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/ --train-normal Training/notumor --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k100.joblib --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k100_stable --norm-mode local --local-block 8 --block 16 --score-mode quantile --score-quantile 0.995 --use-stable-score --drop-border 1 --top-p 0.95 --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k100/eval_hybrid_k100_stable/calib.json
+ 1014  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/ --train-normal Training/notumor --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k120.joblib --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k120_stable --norm-mode local --local-block 8 --block 16 --score-mode quantile --score-quantile 0.995 --use-stable-score --drop-border 1 --top-p 0.95 --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k120/eval_hybrid_k120_stable/calib.json
+ 1015  python evaluate_hybrid_patch_anomaly_stable.py --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/ --train-normal Training/notumor --test-normal Testing/notumor --test-anom Testing/Ischemia --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k150.joblib --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k150_stable --norm-mode local --local-block 8 --block 16 --score-mode quantile --score-quantile 0.995 --use-stable-score --drop-border 1 --top-p 0.95 --w-res 1.0 --w-lat 0.5 --w-rar 0.5 --save-calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k150/eval_hybrid_k150_stable/calib.json
+ 1016  python evaluate_hybrid_patch_anomaly_stable.py   --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/   --test-normal Testing/notumor   --test-anom Testing/Ischemia   --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k10.joblib   --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k100_stable_repeat   --calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k10/eval_hybrid_k10_stable/calib.json   --use-stable-score --drop-border 1 --top-p 0.95   --score-mode quantile --score-quantile 0.995   --w-res 1.0 --w-lat 0.5 --w-rar 0.5
+ 1017  for ss in 10 20 30 50 60 70 75 85 100 120 150; do python evaluate_hybrid_patch_anomaly_stable.py   --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/   --test-normal Testing/notumor   --test-anom Testing/Ischemia   --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k$ss.joblib   --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k$ss_stable_repeat   --calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k$ss/eval_hybrid_k$ss_stable/calib.json   --use-stable-score --drop-border 1 --top-p 0.95   --score-mode quantile --score-quantile 0.995   --w-res 1.0 --w-lat 0.5 --w-rar 0.5; done
+ 1018  for ss in 10 20 30 50 60 70 75 85 100 120 150; do python evaluate_hybrid_patch_anomaly_stable.py   --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/   --test-normal Testing/notumor   --test-anom Testing/Ischemia   --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k$ss.joblib   --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k$ss_stable_repeat   --calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k10/eval_hybrid_k$ss_stable/calib.json   --use-stable-score --drop-border 1 --top-p 0.95   --score-mode quantile --score-quantile 0.995   --w-res 1.0 --w-lat 0.5 --w-rar 0.5; done]
+ 1019  for ss in 10 20 30 50 60 70 75 85 100 120 150; do python evaluate_hybrid_patch_anomaly_stable.py   --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/   --test-normal Testing/notumor   --test-anom Testing/Ischemia   --model ~/dataset2/output_patchnmf_local8/models/patchnmf_k$ss.joblib   --out ~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k$ss_stable_repeat   --calib ~/dataset2/output_patchnmf_local8/eval_struct_res_k10/eval_hybrid_k$ss_stable/calib.json   --use-stable-score --drop-border 1 --top-p 0.95   --score-mode quantile --score-quantile 0.995   --w-res 1.0 --w-lat 0.5 --w-rar 0.5; done
+ 1020  for ss in 10 20 30 50 60 70 75 85 100 120 150; do python evaluate_hybrid_patch_anomaly_stable.py   --dataset-root ~/dataset2/Brain_Stroke_CT_Dataset/   --test-normal Testing/notumor   --test-anom Testing/Ischemia   --model "~/dataset2/output_patchnmf_local8/models/patchnmf_k"$ss".joblib"   --out "~/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k"$ss"_stable_repeat"   --calib "~/dataset2/output_patchnmf_local8/eval_struct_res_k10/eval_hybrid_k"$ss"_stable/calib.json"   --use-stable-score --drop-border 1 --top-p 0.95   --score-mode quantile --score-quantile 0.995   --w-res 1.0 --w-lat 0.5 --w-rar 0.5; done
+ 1021  ls ~/dataset2/output_patchnmf_local8/models/
+ 1022  pwd
+ 1023  for ss in 10 20 30 50 60 70 75 85 100 120 150; do python evaluate_hybrid_patch_anomaly_stable.py   --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/   --test-normal Testing/notumor   --test-anom Testing/Ischemia   --model "/home/sroychow/dataset2/output_patchnmf_local8/models/patchnmf_k"$ss".joblib"   --out "/home/sroychow/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k"$ss"_stable_repeat"   --calib "/home/sroychow/dataset2/output_patchnmf_local8/eval_struct_res_k10/eval_hybrid_k"$ss"_stable/calib.json"   --use-stable-score --drop-border 1 --top-p 0.95   --score-mode quantile --score-quantile 0.995   --w-res 1.0 --w-lat 0.5 --w-rar 0.5; done
+ 1024  ls /home/sroychow/dataset2/output_patchnmf_local8/eval_struct_res_k10/eval_hybrid_k10_stable/calib.json 
+ 1025  for ss in 10 20 30 50 60 70 75 85 100 120 150; do python evaluate_hybrid_patch_anomaly_stable.py   --dataset-root /home/sroychow/dataset2/Brain_Stroke_CT_Dataset/   --test-normal Testing/notumor   --test-anom Testing/Ischemia   --model "/home/sroychow/dataset2/output_patchnmf_local8/models/patchnmf_k"$ss".joblib"   --out "/home/sroychow/dataset2/output_patchnmf_local8/eval_stable/eval_hybrid_k"$ss"_stable_repeat"   --calib "/home/sroychow/dataset2/output_patchnmf_local8/eval_struct_res_k"$ss"/eval_hybrid_k"$ss"_stable/calib.json"   --use-stable-score --drop-border 1 --top-p 0.95   --score-mode quantile --score-quantile 0.995   --w-res 1.0 --w-lat 0.5 --w-rar 0.5; done
+ 1026  emacs -nw plotting.py
+ 1027  ls -ltrh
+ 1028  history > history.txt
