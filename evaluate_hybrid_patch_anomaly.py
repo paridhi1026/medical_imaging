@@ -59,6 +59,8 @@ from sklearn.metrics import roc_curve, auc
 from nmfcore.config import Config
 from nmfcore.preprocess import load_images_matrix
 
+from ct_roi_mask import BrainROIConfig, build_brain_mask
+
 try:
     from scipy.ndimage import gaussian_filter
 except Exception as e:
@@ -68,6 +70,31 @@ except Exception as e:
     )
 
 IMG_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
+
+
+def apply_roi_mask_to_matrix(X: np.ndarray, img_size: int, roi_cfg: BrainROIConfig) -> np.ndarray:
+    """
+    Apply brain ROI masking to a normalised image matrix X (N, img_size*img_size).
+    Background (air) and skull pixels are zeroed so they don't contribute to
+    reconstruction error or anomaly scores.
+    Returns masked X with same shape.
+    """
+    s = img_size
+    X_out = X.copy()
+    for i in range(X.shape[0]):
+        img_f32 = X[i].reshape(s, s)
+        img_u8  = (img_f32 * 255).clip(0, 255).astype(np.uint8)
+        mask    = build_brain_mask(img_u8, roi_cfg)
+        X_out[i] = (img_f32 * mask).ravel()
+    return X_out
+
+
+def load_with_roi(paths, cfg, roi_cfg: BrainROIConfig | None):
+    """Load images and optionally apply ROI masking."""
+    X, kept = load_images_matrix(paths, cfg)
+    if roi_cfg is not None:
+        X = apply_roi_mask_to_matrix(X, cfg.img_size, roi_cfg)
+    return X, kept
 
 
 def ensure_dir(p: str) -> None:
@@ -549,6 +576,18 @@ def main():
     ap.add_argument("--debug", action="store_true")
     ap.add_argument("--debug-n", type=int, default=12)
 
+    # ── Brain ROI masking ────────────────────────────────────────────────────
+    ap.add_argument("--roi-bg-hi",    type=int,   default=10,
+                    help="Pixel threshold for background/air. Pixels ≤ this → excluded. "
+                         "Approx ≤ -900 HU. (default=10)")
+    ap.add_argument("--roi-skull-lo", type=int,   default=200,
+                    help="Pixel threshold for skull/bone. Pixels ≥ this → excluded. "
+                         "Approx ≥ +400 HU. (default=200)")
+    ap.add_argument("--roi-open-k",   type=int,   default=3)
+    ap.add_argument("--roi-close-k",  type=int,   default=9)
+    ap.add_argument("--no-roi",       action="store_true",
+                    help="Disable ROI masking (use original behaviour).")
+
     args = ap.parse_args()
     ensure_dir(args.out)
 
@@ -567,6 +606,21 @@ def main():
     test_n_dir = os.path.join(args.dataset_root, args.test_normal)
     test_a_dir = os.path.join(args.dataset_root, args.test_anom)
 
+    # ── Build ROI config ─────────────────────────────────────────────────────
+    if args.no_roi:
+        print("[ROI] Masking DISABLED (--no-roi).")
+        roi_cfg = None
+    else:
+        roi_cfg = BrainROIConfig(
+            bg_hi    = args.roi_bg_hi,
+            skull_lo = args.roi_skull_lo,
+            open_k   = args.roi_open_k,
+            close_k  = args.roi_close_k,
+        )
+        print(f"[ROI] Masking ENABLED: bg_hi={roi_cfg.bg_hi} (~≤-900 HU), "
+              f"skull_lo={roi_cfg.skull_lo} (~≥+400 HU)")
+    # ─────────────────────────────────────────────────────────────────────────
+
     if args.calib is not None:
         cal = load_calib(args.calib)
         calib_path_used = os.path.abspath(args.calib)
@@ -574,7 +628,7 @@ def main():
         train_paths = list_images_flat(train_dir)
         if len(train_paths) == 0:
             raise SystemExit(f"No training-normal images found: {train_dir}")
-        Xtr, _ = load_images_matrix(train_paths, cfg)
+        Xtr, _ = load_with_roi(train_paths, cfg, roi_cfg)
         cal = build_calib(
             bundle, Xtr,
             img_size=int(args.img_size),
@@ -599,8 +653,8 @@ def main():
     if len(a_paths) == 0:
         raise SystemExit(f"No test-anom images found: {test_a_dir}")
 
-    Xn, _ = load_images_matrix(n_paths, cfg)
-    Xa, _ = load_images_matrix(a_paths, cfg)
+    Xn, _ = load_with_roi(n_paths, cfg, roi_cfg)
+    Xa, _ = load_with_roi(a_paths, cfg, roi_cfg)
 
     scores_n, maps_n, structs_n, _ = score_dataset(
         bundle, Xn, cal=cal,

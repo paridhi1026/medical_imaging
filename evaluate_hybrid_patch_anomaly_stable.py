@@ -36,6 +36,43 @@ from sklearn.metrics import roc_curve, auc
 
 from nmfcore.config import Config
 from nmfcore.preprocess import load_images_matrix
+from ct_roi_mask import BrainROIConfig, build_brain_mask
+
+def apply_roi_mask_to_matrix(X, img_size, roi_cfg):
+    import numpy as np
+    s = img_size
+    X_out = X.copy()
+    for i in range(X.shape[0]):
+        img_f32 = X[i].reshape(s, s)
+        img_u8 = (img_f32 * 255).clip(0, 255).astype(np.uint8)
+        mask = build_brain_mask(img_u8, roi_cfg)
+        X_out[i] = (img_f32 * mask).ravel()
+    return X_out
+
+def load_with_roi(paths, cfg, roi_cfg):
+    X, kept = load_images_matrix(paths, cfg)
+    if roi_cfg is not None:
+        X = apply_roi_mask_to_matrix(X, cfg.img_size, roi_cfg)
+    return X, kept
+
+from ct_roi_mask import BrainROIConfig, build_brain_mask
+
+def apply_roi_mask_to_matrix(X, img_size, roi_cfg):
+    import numpy as np
+    s = img_size
+    X_out = X.copy()
+    for i in range(X.shape[0]):
+        img_f32 = X[i].reshape(s, s)
+        img_u8 = (img_f32 * 255).clip(0, 255).astype(np.uint8)
+        mask = build_brain_mask(img_u8, roi_cfg)
+        X_out[i] = (img_f32 * mask).ravel()
+    return X_out
+
+def load_with_roi(paths, cfg, roi_cfg):
+    X, kept = load_images_matrix(paths, cfg)
+    if roi_cfg is not None:
+        X = apply_roi_mask_to_matrix(X, cfg.img_size, roi_cfg)
+    return X, kept
 
 try:
     from scipy.ndimage import gaussian_filter
@@ -533,6 +570,12 @@ def main():
 
     ap.add_argument("--out", required=True)
 
+    ap.add_argument("--roi-bg-hi", type=int, default=10)
+    ap.add_argument("--roi-skull-lo", type=int, default=200)
+    ap.add_argument("--roi-open-k", type=int, default=3)
+    ap.add_argument("--roi-close-k", type=int, default=9)
+    ap.add_argument("--no-roi", action="store_true")
+
     args = ap.parse_args()
     ensure_dir(args.out)
 
@@ -558,7 +601,8 @@ def main():
         train_paths = list_images_flat(train_dir)
         if len(train_paths) == 0:
             raise SystemExit(f"No training-normal images found: {train_dir}")
-        Xtr, _ = load_images_matrix(train_paths, cfg)
+        roi_cfg = None if args.no_roi else BrainROIConfig(bg_hi=args.roi_bg_hi, skull_lo=args.roi_skull_lo, open_k=args.roi_open_k, close_k=args.roi_close_k)
+        Xtr, _ = load_with_roi(train_paths, cfg, roi_cfg)
         cal = build_calib(
             bundle, Xtr,
             img_size=int(args.img_size),
@@ -586,8 +630,8 @@ def main():
     if len(a_paths) == 0:
         raise SystemExit(f"No test-anom images found: {test_a_dir}")
 
-    Xn, _ = load_images_matrix(n_paths, cfg)
-    Xa, _ = load_images_matrix(a_paths, cfg)
+    Xn, _ = load_with_roi(n_paths, cfg, roi_cfg)
+    Xa, _ = load_with_roi(a_paths, cfg, roi_cfg)
 
     scores_n, _, _, _ = score_dataset(
         bundle, Xn, cal=cal,
@@ -702,3 +746,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
