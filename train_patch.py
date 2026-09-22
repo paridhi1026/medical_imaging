@@ -281,34 +281,39 @@ def main():
         raise RuntimeError("No images loaded after preprocessing (check paths / file formats).")
 
     # ── Brain ROI masking ────────────────────────────────────────────────────
-    if args.no_roi:
-        print("[ROI] Masking DISABLED (--no-roi). Using raw images.")
-        masks_train = np.ones((X_train.shape[0], cfg.img_size, cfg.img_size), dtype=np.float32)
-        masks_val   = np.ones((X_val.shape[0],   cfg.img_size, cfg.img_size), dtype=np.float32)
-        roi_cfg = BrainROIConfig()  # unused but needed for signature
-    else:
-        roi_cfg = BrainROIConfig(
-            bg_hi         = args.roi_bg_hi,
-            skull_lo      = args.roi_skull_lo,
-            open_k        = args.roi_open_k,
-            close_k       = args.roi_close_k,
-            min_mask_frac = args.roi_min_frac,
-        )
-        print(f"\n[ROI] Masking ENABLED: bg_hi={roi_cfg.bg_hi} (~≤-900 HU), "
-              f"skull_lo={roi_cfg.skull_lo} (~≥+400 HU), min_frac={roi_cfg.min_mask_frac}")
-        print("[ROI] Masking train images...")
-        X_train, masks_train = apply_roi_mask(X_train, cfg.img_size, roi_cfg)
-        print("[ROI] Masking val images...")
-        X_val,   masks_val   = apply_roi_mask(X_val,   cfg.img_size, roi_cfg)
-        # Save roi config alongside model outputs
-        with open(os.path.join(args.out, "roi_config.json"), "w") as f:
-            json.dump(roi_cfg.to_dict(), f, indent=2)
-        print(f"[ROI] Config saved to {os.path.join(args.out, 'roi_config.json')}")
+    # if args.no_roi:
+    #     print("[ROI] Masking DISABLED (--no-roi). Using raw images.")
+    #     masks_train = np.ones((X_train.shape[0], cfg.img_size, cfg.img_size), dtype=np.float32)
+    #     masks_val   = np.ones((X_val.shape[0],   cfg.img_size, cfg.img_size), dtype=np.float32)
+    #     roi_cfg = BrainROIConfig()  # unused but needed for signature
+    # else:
+    #     roi_cfg = BrainROIConfig(
+    #         bg_hi         = args.roi_bg_hi,
+    #         skull_lo      = args.roi_skull_lo,
+    #         open_k        = args.roi_open_k,
+    #         close_k       = args.roi_close_k,
+    #         min_mask_frac = args.roi_min_frac,
+    #     )
+    #     print(f"\n[ROI] Masking ENABLED: bg_hi={roi_cfg.bg_hi} (~≤-900 HU), "
+    #           f"skull_lo={roi_cfg.skull_lo} (~≥+400 HU), min_frac={roi_cfg.min_mask_frac}")
+    #     print("[ROI] Masking train images...")
+    #     X_train, masks_train = apply_roi_mask(X_train, cfg.img_size, roi_cfg)
+    #     print("[ROI] Masking val images...")
+    #     X_val,   masks_val   = apply_roi_mask(X_val,   cfg.img_size, roi_cfg)
+    #     # Save roi config alongside model outputs
+    #     with open(os.path.join(args.out, "roi_config.json"), "w") as f:
+    #         json.dump(roi_cfg.to_dict(), f, indent=2)
+    #     print(f"[ROI] Config saved to {os.path.join(args.out, 'roi_config.json')}")
     # ────────────────────────────────────────────────────────────────────────
+
+    masks_train = np.ones((X_train.shape[0], cfg.img_size, cfg.img_size), dtype=np.float32)
+    masks_val   = np.ones((X_val.shape[0],   cfg.img_size, cfg.img_size), dtype=np.float32)
 
     ks = sorted({int(x) for x in args.k_list.split(",") if x.strip()})
     print(f"Running PatchNMF k-scan: ks={ks} | ncore={args.ncore} | io_ncore={args.io_ncore} | norm={cfg.norm_mode}")
 
+    roi_cfg = BrainROIConfig()  # unused placeholder, kept for function signature
+    
     results = Parallel(n_jobs=max(1, int(args.ncore)), backend="loky", verbose=10)(
         delayed(_train_one_k)(k, args, cfg, X_train, X_val, masks_train, masks_val, roi_cfg) for k in ks
     )
