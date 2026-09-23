@@ -79,56 +79,14 @@ class BrainROIConfig:
 # Core masking logic
 # ---------------------------------------------------------------------------
 
-def build_brain_mask(img_gray: np.ndarray, cfg: BrainROIConfig) -> np.ndarray:
+def build_brain_mask(img_gray: np.ndarray, cfg: BrainROIConfig = None) -> np.ndarray:
     """
-    Build a binary brain-tissue mask for a single grayscale CT slice.
-
-    Steps
-    -----
-    1. Threshold out background (dark pixels ≤ bg_hi).
-    2. Threshold out skull   (bright pixels ≥ skull_lo).
-    3. Keep middle-intensity pixels (brain tissue).
-    4. Morphological opening  → remove speckling at air/tissue boundary.
-    5. Find the largest connected component (the brain itself).
-    6. Morphological closing  → fill small holes inside the brain region.
-
-    Parameters
-    ----------
-    img_gray : H×W uint8 numpy array (0-255, single channel).
-    cfg      : BrainROIConfig instance.
-
-    Returns
-    -------
-    mask : H×W float32 array.  1.0 = brain tissue,  0.0 = background/skull.
+    Build binary brain mask for pre-masked CT slice (1.0 for tissue > 0, 0.0 for background).
     """
-    assert img_gray.ndim == 2, "Expected a grayscale 2-D image"
-    assert img_gray.dtype == np.uint8, "Expected uint8 (0-255) input"
+    if img_gray is None or img_gray.size == 0:
+        return np.zeros((0, 0), dtype=np.float32)
+    return (img_gray > 1e-4).astype(np.float32)
 
-    # Step 1+2+3 – intensity-based tissue band
-    tissue = ((img_gray > cfg.bg_hi) & (img_gray < cfg.skull_lo)).astype(np.uint8)
-
-    # Step 4 – opening removes thin noise / partial-volume voxels at borders
-    if cfg.open_k > 0:
-        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (cfg.open_k, cfg.open_k))
-        tissue = cv2.morphologyEx(tissue, cv2.MORPH_OPEN, k)
-
-    # Step 5 – largest connected component = brain parenchyma
-    n_labels, labels, stats, _ = cv2.connectedComponentsWithStats(tissue, connectivity=8)
-    if n_labels <= 1:
-        # no tissue found – return empty mask
-        return np.zeros(img_gray.shape, dtype=np.float32)
-
-    # label 0 is background; find largest non-background component
-    areas = stats[1:, cv2.CC_STAT_AREA]
-    largest_label = int(np.argmax(areas)) + 1
-    brain = (labels == largest_label).astype(np.uint8)
-
-    # Step 6 – closing fills small holes (ventricles, CSF spaces)
-    if cfg.close_k > 0:
-        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (cfg.close_k, cfg.close_k))
-        brain = cv2.morphologyEx(brain, cv2.MORPH_CLOSE, k)
-
-    return brain.astype(np.float32)
 
 
 # ---------------------------------------------------------------------------

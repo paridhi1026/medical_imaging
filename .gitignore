@@ -1,28 +1,63 @@
+# =========================
 # Dataset folders
+# =========================
 Training/
 Testing/
 Bleeding/
 External_Test/
 
-# Outputs
+# =========================
+# Generated outputs
+# =========================
 output/
 output_eval/
+results/
 
+# =========================
 # Virtual environment
+# =========================
 venv/
+.venv/
 
+# =========================
 # Python cache
+# =========================
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
+# =========================
+# Backup / temporary files
+# =========================
+*~
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# =========================
 # Model files
+# =========================
 *.h5
+*.hdf5
 *.pt
 *.pth
+*.ckpt
+*.joblib
 
+# =========================
 # OS files
+# =========================
 .DS_Store
 Thumbs.db
 
-# results
-results/
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Logs
+# =========================
+*.log

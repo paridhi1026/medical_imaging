@@ -25,11 +25,24 @@ def _resize_gray(path: str, img_size: int) -> np.ndarray:
 
 
 def normalize_global(img: np.ndarray, eps: float = 1e-8) -> np.ndarray:
-    mn = float(img.min())
-    mx = float(img.max())
-    if mx - mn < eps:
+    """
+    Min-max normalization strictly over non-zero brain tissue pixels (img > 1e-4).
+    Background pixels (<= 1e-4) remain exactly 0.0.
+    """
+    mask = img > 1e-4
+    if not np.any(mask):
         return np.zeros_like(img, dtype=np.float32)
-    return ((img - mn) / (mx - mn + eps)).astype(np.float32)
+    tissue_vals = img[mask]
+    mn = float(tissue_vals.min())
+    mx = float(tissue_vals.max())
+    if mx - mn < eps:
+        out = np.zeros_like(img, dtype=np.float32)
+        out[mask] = 0.5
+        return out
+    out = np.zeros_like(img, dtype=np.float32)
+    out[mask] = ((img[mask] - mn) / (mx - mn + eps)).astype(np.float32)
+    return np.clip(out, 0.0, 1.0)
+
 
 
 def normalize_local_block(img: np.ndarray, block: int = 8, eps: float = 1e-8) -> np.ndarray:

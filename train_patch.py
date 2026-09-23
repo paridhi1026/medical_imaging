@@ -4,51 +4,37 @@ import numpy as np
 import joblib
 
 from joblib import Parallel, delayed
-from sklearn.model_selection import train_test_split
 from sklearn.decomposition import NMF
-from sklearn.preprocessing import MinMaxScaler
 
 from nmfcore.config import Config
-from nmfcore.data import train_test_paths, list_class_images
+from nmfcore.data import train_test_paths, list_class_images, patient_group_split
 from nmfcore.preprocess import load_images_matrix
 from nmfcore.model_patch import PatchNMFBundle
-
 from ct_roi_mask import BrainROIConfig, build_brain_mask
 
 
 def ensure_dir(p): os.makedirs(p, exist_ok=True)
 
 
-def apply_roi_mask(X: np.ndarray, img_size: int, roi_cfg: BrainROIConfig) -> tuple:
+def extract_tissue_masks(X: np.ndarray, img_size: int) -> np.ndarray:
     """
-    Apply brain ROI masking to a normalised image matrix X (N, img_size*img_size).
-    - Pixels in background/skull regions are zeroed out.
-    - Returns masked X and per-image masks (N, img_size, img_size).
+    Extract foreground brain tissue mask (1.0 for pixel > 1e-4, 0.0 for background).
     """
     s = img_size
-    masks = np.zeros((X.shape[0], s, s), dtype=np.float32)
-    X_masked = X.copy()
-    for i in range(X.shape[0]):
-        img_f32 = X[i].reshape(s, s)                          # 0-1 float
-        img_u8  = (img_f32 * 255).clip(0, 255).astype(np.uint8)
-        mask = build_brain_mask(img_u8, roi_cfg)               # 0/1 float32
-        masks[i] = mask
-        X_masked[i] = (img_f32 * mask).ravel()                # zero non-brain
-    n_zeros = int((masks.sum(axis=(1, 2)) < 1).sum())
-    if n_zeros:
-        print(f"  [ROI] WARNING: {n_zeros} images have empty masks — check thresholds.")
-    mean_frac = float(masks.mean())
-    print(f"  [ROI] Mean brain pixel fraction: {mean_frac:.3f} "
-          f"(bg_hi={roi_cfg.bg_hi}, skull_lo={roi_cfg.skull_lo})")
-    return X_masked, masks
+    N = X.shape[0]
+    masks = np.zeros((N, s, s), dtype=np.float32)
+    for i in range(N):
+        img = X[i].reshape(s, s)
+        masks[i] = (img > 1e-4).astype(np.float32)
+    return masks
 
 
 def filter_brain_patches(X: np.ndarray, masks: np.ndarray, patch: int, stride: int,
-                          img_size: int, roi_cfg: BrainROIConfig,
+                          img_size: int, min_mask_frac: float = 0.5,
                           max_patches: int = 0, seed: int = 42) -> np.ndarray:
     """
-    Extract patches whose brain-mask fraction >= roi_cfg.min_mask_frac.
-    Skull and background patches are discarded so NMF never learns them.
+    Extract patches whose brain-mask fraction >= min_mask_frac.
+    Zero-background margin patches are discarded so NMF never learns them.
     """
     s = img_size
     kept = []
@@ -60,12 +46,11 @@ def filter_brain_patches(X: np.ndarray, masks: np.ndarray, patch: int, stride: i
             for c in range(0, s - patch + 1, stride):
                 total += 1
                 mpatch = mask[r:r+patch, c:c+patch]
-                if float(mpatch.mean()) < roi_cfg.min_mask_frac:
+                if float(mpatch.mean()) < min_mask_frac:
                     continue
                 kept.append(img[r:r+patch, c:c+patch].ravel())
     patches = np.array(kept, dtype=np.float32)
-    print(f"  [ROI] Patch filter: {len(kept)}/{total} patches kept "
-          f"(min_mask_frac={roi_cfg.min_mask_frac})")
+    print(f"  [PatchFilter] {len(kept)}/{total} tissue patches kept (min_mask_frac={min_mask_frac})")
     if max_patches > 0 and patches.shape[0] > max_patches:
         rng = np.random.default_rng(seed)
         patches = patches[rng.choice(patches.shape[0], size=max_patches, replace=False)]
@@ -85,7 +70,7 @@ def fit_blockstats(bundle: PatchNMFBundle, X_val: np.ndarray, block: int,
                    mask_lo_q=20.0, mask_hi_q=99.5, batch_recon: int = 16):
     """
     Compute per-block residual energy mean/std on val normals.
-    Uses a mask to ignore background and saturated pixels.
+    Uses tissue mask to ignore background pixels.
     """
     s = bundle.cfg.img_size
     Xrec = bundle.reconstruct_images(X_val, batch=batch_recon)
@@ -93,9 +78,7 @@ def fit_blockstats(bundle: PatchNMFBundle, X_val: np.ndarray, block: int,
     maps = []
     for i in range(X_val.shape[0]):
         img = X_val[i].reshape(s, s)
-        lo = np.percentile(img, mask_lo_q)
-        hi = np.percentile(img, mask_hi_q)
-        mask = ((img > lo) & (img < hi)).astype(np.float32)
+        mask = (img > 1e-4).astype(np.float32)
 
         diff2 = ((X_val[i] - Xrec[i]) ** 2).reshape(s, s) * mask
         maps.append(block_mse_map(diff2, block))
@@ -114,7 +97,7 @@ def fit_blockstats(bundle: PatchNMFBundle, X_val: np.ndarray, block: int,
 
 
 def _train_one_k(k: int, args, cfg: Config, X_train: np.ndarray, X_val: np.ndarray,
-                 masks_train: np.ndarray, masks_val: np.ndarray, roi_cfg: BrainROIConfig) -> dict:
+                 masks_train: np.ndarray, masks_val: np.ndarray) -> dict:
     try:
         nmf = NMF(
             n_components=k,
@@ -122,23 +105,19 @@ def _train_one_k(k: int, args, cfg: Config, X_train: np.ndarray, X_val: np.ndarr
             random_state=args.seed,
             max_iter=args.max_iter,
         )
-        scaler = MinMaxScaler()
-        bundle = PatchNMFBundle(cfg=cfg, nmf=nmf, scaler=scaler, patch=args.patch, stride=args.stride)
+        bundle = PatchNMFBundle(cfg=cfg, nmf=nmf, scaler=None, patch=args.patch, stride=args.stride)
 
         # --- ROI-filtered patch extraction ---
-        # Only brain-tissue patches are fed to NMF; skull and background patches are discarded.
         patches = filter_brain_patches(
             X_train, masks_train,
             patch=args.patch, stride=args.stride,
             img_size=cfg.img_size,
-            roi_cfg=roi_cfg,
+            min_mask_frac=args.roi_min_frac,
             max_patches=args.max_patches,
             seed=args.seed,
         )
-        # Fit NMF directly on the filtered patch matrix
-        bundle.scaler.fit(patches)
-        patches_scaled = bundle.scaler.transform(patches)
-        bundle.nmf.fit(patches_scaled)
+        # Fit NMF directly on the filtered non-negative patch matrix
+        bundle.nmf.fit(patches)
 
         # val recon and val mse distribution
         Xrec_val = bundle.reconstruct_images(X_val, batch=args.recon_batch)
@@ -195,20 +174,20 @@ def main():
     ap.add_argument("--out", required=True)
 
     ap.add_argument("--img-size", type=int, default=128)
-    ap.add_argument("--normal-class", default="notumor")
+    ap.add_argument("--normal-class", default="after")
 
     ap.add_argument("--norm-mode", choices=["global", "local"], default="global")
     ap.add_argument("--local-block", type=int, default=8)
 
-    ap.add_argument("--patch", type=int, default=8)
-    ap.add_argument("--stride", type=int, default=4)
+    ap.add_argument("--patch", type=int, default=16)
+    ap.add_argument("--stride", type=int, default=8)
 
-    ap.add_argument("--k-list", default="10,20,30,50,75,100")
-    ap.add_argument("--max-iter", type=int, default=800)
-    ap.add_argument("--max-patches", type=int, default=0, help="Subsample patches for NMF fit (0=no subsample)")
+    ap.add_argument("--k-list", default="20,30,40,50,60,75")
+    ap.add_argument("--max-iter", type=int, default=500)
+    ap.add_argument("--max-patches", type=int, default=250000, help="Subsample patches for NMF fit (0=no subsample)")
 
-    ap.add_argument("--train-frac", type=float, default=0.60)
-    ap.add_argument("--val-frac", type=float, default=0.20)
+    ap.add_argument("--train-frac", type=float, default=0.70)
+    ap.add_argument("--val-frac", type=float, default=0.15)
     ap.add_argument("--seed", type=int, default=42)
 
     ap.add_argument("--block", type=int, default=16)
@@ -222,22 +201,8 @@ def main():
     ap.add_argument("--io-ncore", type=int, default=1,
                     help="Parallel workers for image loading/preprocessing.")
     ap.add_argument("--recon-batch", type=int, default=16)
-
-    # ── Brain ROI masking (exclude black background and skull) ──────────────
-    ap.add_argument("--roi-bg-hi",       type=int,   default=10,
-                    help="Pixel threshold for background/air. Pixels ≤ this are excluded. "
-                         "Approx HU equivalent: ≤ -900 HU. (default=10)")
-    ap.add_argument("--roi-skull-lo",    type=int,   default=200,
-                    help="Pixel threshold for skull/bone. Pixels ≥ this are excluded. "
-                         "Approx HU equivalent: ≥ +400 HU. (default=200)")
-    ap.add_argument("--roi-open-k",      type=int,   default=3,
-                    help="Morphological opening kernel size for mask cleanup. (default=3)")
-    ap.add_argument("--roi-close-k",     type=int,   default=9,
-                    help="Morphological closing kernel size to fill ventricle holes. (default=9)")
-    ap.add_argument("--roi-min-frac",    type=float, default=0.5,
-                    help="Min brain-pixel fraction for a patch to be kept in NMF training. (default=0.5)")
-    ap.add_argument("--no-roi",          action="store_true",
-                    help="Disable ROI masking entirely (use original behaviour).")
+    ap.add_argument("--roi-min-frac", type=float, default=0.5,
+                    help="Min brain-pixel fraction for a patch to be kept in NMF training.")
 
     args = ap.parse_args()
 
@@ -253,7 +218,6 @@ def main():
         random_state=args.seed,
     )
 
-    # dataset paths
     train_root, _ = train_test_paths(cfg.base_path)
     if not os.path.isdir(train_root):
         raise RuntimeError(f"Training folder not found: {train_root}")
@@ -261,61 +225,43 @@ def main():
     classes = list_class_images(train_root)
     good = classes.get(cfg.normal_class, [])
     if not good:
-        raise RuntimeError(f"No normal images found for class='{cfg.normal_class}' in {train_root}")
+        # Fallback to any class found if normal-class not matched exactly
+        first_cls = list(classes.keys())[0] if classes else ""
+        good = classes.get(first_cls, [])
+        if not good:
+            raise RuntimeError(f"No images found in {train_root}")
 
-    # split normals only
-    good_train, good_tmp = train_test_split(good, train_size=args.train_frac, random_state=args.seed, shuffle=True)
-    val_size = args.val_frac / (1.0 - args.train_frac)
-    good_val, good_hold = train_test_split(good_tmp, train_size=val_size, random_state=args.seed, shuffle=True)
+    # Patient-level grouped split to prevent data leakage
+    good_train, good_val, good_hold = patient_group_split(
+        good, train_frac=args.train_frac, val_frac=args.val_frac, seed=args.seed
+    )
 
     with open(os.path.join(args.out, "splits.json"), "w") as f:
-        json.dump({"good_train": good_train, "good_val": good_val, "good_hold": good_hold}, f, indent=2)
+        json.dump({
+            "good_train": good_train,
+            "good_val": good_val,
+            "good_hold": good_hold,
+            "n_train_files": len(good_train),
+            "n_val_files": len(good_val),
+            "n_hold_files": len(good_hold)
+        }, f, indent=2)
 
-    # load images (parallel if io-ncore>1)
     X_train, kept_train = load_images_matrix(good_train, cfg, ncore=args.io_ncore)
     X_val, kept_val = load_images_matrix(good_val, cfg, ncore=args.io_ncore)
 
-    print("X_train:", X_train.shape, "kept:", len(kept_train))
-    print("X_val  :", X_val.shape, "kept:", len(kept_val))
+    print(f"Loaded X_train: {X_train.shape} from {len(kept_train)} files")
+    print(f"Loaded X_val  : {X_val.shape} from {len(kept_val)} files")
     if X_train.shape[0] == 0 or X_val.shape[0] == 0:
-        raise RuntimeError("No images loaded after preprocessing (check paths / file formats).")
+        raise RuntimeError("No images loaded after preprocessing.")
 
-    # ── Brain ROI masking ────────────────────────────────────────────────────
-    # if args.no_roi:
-    #     print("[ROI] Masking DISABLED (--no-roi). Using raw images.")
-    #     masks_train = np.ones((X_train.shape[0], cfg.img_size, cfg.img_size), dtype=np.float32)
-    #     masks_val   = np.ones((X_val.shape[0],   cfg.img_size, cfg.img_size), dtype=np.float32)
-    #     roi_cfg = BrainROIConfig()  # unused but needed for signature
-    # else:
-    #     roi_cfg = BrainROIConfig(
-    #         bg_hi         = args.roi_bg_hi,
-    #         skull_lo      = args.roi_skull_lo,
-    #         open_k        = args.roi_open_k,
-    #         close_k       = args.roi_close_k,
-    #         min_mask_frac = args.roi_min_frac,
-    #     )
-    #     print(f"\n[ROI] Masking ENABLED: bg_hi={roi_cfg.bg_hi} (~≤-900 HU), "
-    #           f"skull_lo={roi_cfg.skull_lo} (~≥+400 HU), min_frac={roi_cfg.min_mask_frac}")
-    #     print("[ROI] Masking train images...")
-    #     X_train, masks_train = apply_roi_mask(X_train, cfg.img_size, roi_cfg)
-    #     print("[ROI] Masking val images...")
-    #     X_val,   masks_val   = apply_roi_mask(X_val,   cfg.img_size, roi_cfg)
-    #     # Save roi config alongside model outputs
-    #     with open(os.path.join(args.out, "roi_config.json"), "w") as f:
-    #         json.dump(roi_cfg.to_dict(), f, indent=2)
-    #     print(f"[ROI] Config saved to {os.path.join(args.out, 'roi_config.json')}")
-    # ────────────────────────────────────────────────────────────────────────
-
-    masks_train = np.ones((X_train.shape[0], cfg.img_size, cfg.img_size), dtype=np.float32)
-    masks_val   = np.ones((X_val.shape[0],   cfg.img_size, cfg.img_size), dtype=np.float32)
+    masks_train = extract_tissue_masks(X_train, cfg.img_size)
+    masks_val   = extract_tissue_masks(X_val, cfg.img_size)
 
     ks = sorted({int(x) for x in args.k_list.split(",") if x.strip()})
     print(f"Running PatchNMF k-scan: ks={ks} | ncore={args.ncore} | io_ncore={args.io_ncore} | norm={cfg.norm_mode}")
 
-    roi_cfg = BrainROIConfig()  # unused placeholder, kept for function signature
-    
     results = Parallel(n_jobs=max(1, int(args.ncore)), backend="loky", verbose=10)(
-        delayed(_train_one_k)(k, args, cfg, X_train, X_val, masks_train, masks_val, roi_cfg) for k in ks
+        delayed(_train_one_k)(k, args, cfg, X_train, X_val, masks_train, masks_val) for k in ks
     )
 
     results.sort(key=lambda r: r["k"])

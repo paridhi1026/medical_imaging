@@ -1,45 +1,12 @@
 #!/usr/bin/env python3
 """
-Hybrid PatchNMF anomaly evaluation (structure-aware residual + optional latent Mahalanobis + optional rarity score).
-
-Dataset structure supported:
-
-  DATASET_ROOT/
-    Trainig/notumor
-    Testing/notumor
-    Testing/Ischemoa
+Hybrid PatchNMF anomaly evaluation (tissue-masked hypodensity-aware residual + optional latent Mahalanobis + optional rarity score).
 
 Features
-- Structure-aware residual (Difference-of-Gaussians on |X - Xrec|) -> block map -> quantile/mean scoring.
-- Optional latent Mahalanobis (if the loaded bundle exposes an encoder/transform API).
-- Optional rarity score using training-normal calibration (per-block z^2 mean).
-- Automatic AUC sign fix: computes AUC for score and -score; keeps the better direction.
-- "Freeze for conference": saves calibration JSON to reuse for identical normalization.
-
-Outputs
-- roc_raw.png (raw direction)
-- roc.png (best direction, possibly inverted)
-- metrics.json (includes invert flag, weights, calibration path, etc.)
-- calib.json (if --save-calib is set)
-- debug_*.png (if --debug)
-
-Example (your paths)
-  python evaluate_hybrid_patch_anomaly.py \
-    --dataset-root ./dataset2/Brain_Stroke_CT_Dataset \
-    --train-normal Trainig/notumor \
-    --test-normal Testing/notumor \
-    --test-anom Testing/Ischemoa \
-    --model ./dataset2/outputs_patchnmf_local8/patchnmf_k100.joblib \
-    --out ./dataset2/eval_hybrid_k100 \
-    --norm-mode local --local-block 8 \
-    --mask-lo-q 20 --mask-hi-q 99.5 \
-    --score-mode quantile --score-quantile 0.995 \
-    --w-res 1.0 --w-lat 0.5 --w-rar 0.5 \
-    --save-calib ./dataset2/eval_hybrid_k100/calib.json \
-    --debug --debug-n 12
-
-Reuse frozen calibration:
-  python evaluate_hybrid_patch_anomaly.py ... --calib ./dataset2/eval_hybrid_k100/calib.json
+- Tissue-masked hypodensity residual map (detects ischemic darkening inside brain parenchyma).
+- Optional latent Mahalanobis distance & rarity score.
+- ROC curve & AUC calculation with auto-direction check.
+- Calibration saving and reuse for frozen evaluations.
 """
 
 from __future__ import annotations
@@ -58,7 +25,6 @@ from sklearn.metrics import roc_curve, auc
 
 from nmfcore.config import Config
 from nmfcore.preprocess import load_images_matrix
-
 from ct_roi_mask import BrainROIConfig, build_brain_mask
 
 try:
@@ -70,31 +36,6 @@ except Exception as e:
     )
 
 IMG_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
-
-
-def apply_roi_mask_to_matrix(X: np.ndarray, img_size: int, roi_cfg: BrainROIConfig) -> np.ndarray:
-    """
-    Apply brain ROI masking to a normalised image matrix X (N, img_size*img_size).
-    Background (air) and skull pixels are zeroed so they don't contribute to
-    reconstruction error or anomaly scores.
-    Returns masked X with same shape.
-    """
-    s = img_size
-    X_out = X.copy()
-    for i in range(X.shape[0]):
-        img_f32 = X[i].reshape(s, s)
-        img_u8  = (img_f32 * 255).clip(0, 255).astype(np.uint8)
-        mask    = build_brain_mask(img_u8, roi_cfg)
-        X_out[i] = (img_f32 * mask).ravel()
-    return X_out
-
-
-def load_with_roi(paths, cfg, roi_cfg: BrainROIConfig | None):
-    """Load images and optionally apply ROI masking."""
-    X, kept = load_images_matrix(paths, cfg)
-    if roi_cfg is not None:
-        X = apply_roi_mask_to_matrix(X, cfg.img_size, roi_cfg)
-    return X, kept
 
 
 def ensure_dir(p: str) -> None:
@@ -138,30 +79,32 @@ def structure_residual_map(
     img: np.ndarray,
     rec: np.ndarray,
     *,
+    use_dog: bool = False,
     sigma_small: float = 2.0,
     sigma_large: float = 6.0,
     eps: float = 1e-12,
 ) -> np.ndarray:
     """
-    Structure-aware residual on |img - rec|:
-      R = |img-rec|
-      R1 = G(R, sigma_small)
-      R2 = G(R1, sigma_large)
-      S = max(0, R1 - R2)
-    Returns S (H,W) float32.
+    Tissue-masked residual map:
+      - R_abs  = |rec - img|
+      - R_dark = max(0, rec - img)  (signed hypodensity stroke signal)
+      - Masked to tissue region (img > 1e-4)
+    Returns normalized residual map (H,W) float32.
     """
-    R = np.abs(img - rec).astype(np.float32)
-    R1 = gaussian_filter(R, sigma=float(sigma_small))
-    R2 = gaussian_filter(R1, sigma=float(sigma_large))
-    S = np.maximum(0.0, R1 - R2).astype(np.float32)
-    denom = float(np.mean(S) + eps)
-    return (S / denom).astype(np.float32)
+    mask = (img > 1e-4).astype(np.float32)
+    R_abs = np.abs(rec - img).astype(np.float32)
+    R_dark = np.maximum(0.0, rec - img).astype(np.float32)
+    R = (R_abs + 1.5 * R_dark) * mask
 
+    if use_dog:
+        R1 = gaussian_filter(R, sigma=float(sigma_small))
+        R2 = gaussian_filter(R1, sigma=float(sigma_large))
+        S = np.maximum(0.0, R1 - R2).astype(np.float32) * mask
+        denom = float(np.mean(S[mask > 0]) + eps) if np.any(mask > 0) else 1.0
+        return (S / denom).astype(np.float32)
 
-def intensity_mask(img: np.ndarray, lo_q: float, hi_q: float) -> np.ndarray:
-    lo = np.percentile(img, float(lo_q))
-    hi = np.percentile(img, float(hi_q))
-    return ((img > lo) & (img < hi)).astype(np.float32)
+    denom = float(np.mean(R[mask > 0]) + eps) if np.any(mask > 0) else 1.0
+    return (R / denom).astype(np.float32)
 
 
 def scalar_from_blockmap(m: np.ndarray, score_mode: str, score_quantile: float) -> float:
@@ -180,16 +123,6 @@ def safe_inv_cov(cov: np.ndarray, ridge: float = 1e-6) -> np.ndarray:
 
 
 def try_get_latents(bundle, X: np.ndarray, batch: int = 64) -> Optional[np.ndarray]:
-    """
-    Best-effort latent extraction. Returns (N,K) or None.
-
-    Tries these APIs if present:
-      - bundle.transform_images(X, batch=?)
-      - bundle.transform(X, batch=?)
-      - bundle.encode_images(X, batch=?)
-      - bundle.nmf.transform(X)
-      - bundle.model.transform(X)
-    """
     cand = [
         getattr(bundle, "transform_images", None),
         getattr(bundle, "transform", None),
@@ -238,8 +171,7 @@ class Calib:
     block_sig: Optional[List[float]] = None
     img_size: int = 128
     block: int = 8
-    lo_q: float = 20.0
-    hi_q: float = 99.5
+    use_dog: bool = False
     sigma_small: float = 2.0
     sigma_large: float = 6.0
 
@@ -250,8 +182,7 @@ def compute_train_stats(
     *,
     img_size: int,
     block: int,
-    lo_q: float,
-    hi_q: float,
+    use_dog: bool,
     sigma_small: float,
     sigma_large: float,
     recon_batch: int,
@@ -271,10 +202,7 @@ def compute_train_stats(
         img = Xtrain[i].reshape(s, s)
         rec = Xrec[i].reshape(s, s)
 
-        msk = intensity_mask(img, lo_q, hi_q)
-        S = structure_residual_map(img, rec, sigma_small=sigma_small, sigma_large=sigma_large)
-        S = S * msk
-
+        S = structure_residual_map(img, rec, use_dog=use_dog, sigma_small=sigma_small, sigma_large=sigma_large)
         bm = block_mean_map(S, block).astype(np.float32)
         block_maps[i] = bm.reshape(-1)
         res_scores[i] = float(scalar_from_blockmap(bm, score_mode, score_quantile))
@@ -295,8 +223,7 @@ def build_calib(
     *,
     img_size: int,
     block: int,
-    lo_q: float,
-    hi_q: float,
+    use_dog: bool,
     sigma_small: float,
     sigma_large: float,
     recon_batch: int,
@@ -306,8 +233,7 @@ def build_calib(
     res_scores, rar_scores, block_mu, block_sig, latents = compute_train_stats(
         bundle, Xtrain,
         img_size=img_size, block=block,
-        lo_q=lo_q, hi_q=hi_q,
-        sigma_small=sigma_small, sigma_large=sigma_large,
+        use_dog=use_dog, sigma_small=sigma_small, sigma_large=sigma_large,
         recon_batch=recon_batch,
         score_mode=score_mode, score_quantile=score_quantile,
     )
@@ -337,8 +263,7 @@ def build_calib(
         block_sig=block_sig.astype(np.float32).tolist(),
         img_size=int(img_size),
         block=int(block),
-        lo_q=float(lo_q),
-        hi_q=float(hi_q),
+        use_dog=bool(use_dog),
         sigma_small=float(sigma_small),
         sigma_large=float(sigma_large),
     )
@@ -389,9 +314,7 @@ def score_dataset(
         img = X[i].reshape(s, s)
         rec = Xrec[i].reshape(s, s)
 
-        msk = intensity_mask(img, cal.lo_q, cal.hi_q)
-        S = structure_residual_map(img, rec, sigma_small=cal.sigma_small, sigma_large=cal.sigma_large)
-        S = S * msk
+        S = structure_residual_map(img, rec, use_dog=cal.use_dog, sigma_small=cal.sigma_small, sigma_large=cal.sigma_large)
         struct_maps.append(S)
 
         bm = block_mean_map(S, block).astype(np.float32)
@@ -418,7 +341,6 @@ def score_dataset(
     res_z = (res_scores - float(cal.res_mu)) / float(cal.res_sig + 1e-8)
     rar_z = (rar_scores - float(cal.rar_mu)) / float(cal.rar_sig + 1e-8)
 
-    # For latent, if calibration exists use current split z-norm; it still preserves ranking and is stable enough.
     if cal.lat_mu is not None and cal.lat_invcov is not None and latents is not None:
         lat_mu_s = float(np.mean(lat_scores))
         lat_sig_s = float(np.std(lat_scores) + 1e-8)
@@ -446,11 +368,12 @@ def plot_roc(y_true: np.ndarray, y_score: np.ndarray, title: str, out_png: str) 
     roc_auc = auc(fpr, tpr)
 
     plt.figure(figsize=(6, 5))
-    plt.plot(fpr, tpr)
-    plt.plot([0, 1], [0, 1], linestyle="--")
-    plt.title(f"{title} (AUC={roc_auc:.4f})")
+    plt.plot(fpr, tpr, label=f"AUC = {roc_auc:.4f}")
+    plt.plot([0, 1], [0, 1], linestyle="--", color="gray")
+    plt.title(title)
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
+    plt.legend(loc="lower right")
     plt.grid(True)
     plt.tight_layout()
     plt.savefig(out_png, dpi=150)
@@ -491,75 +414,42 @@ def save_debug(
 
     for j, i in enumerate(idx):
         img = X[i].reshape(s, s)
-        bm = block_maps[i]
         sm = struct_maps[i]
         y = int(y_true[i])
         pred = int(scores[i] >= thr)
-
         tag = "TP" if (y == 1 and pred == 1) else "TN" if (y == 0 and pred == 0) else "FP" if (y == 0 and pred == 1) else "FN"
 
-        flat = bm.reshape(-1)
-        cut = np.quantile(flat, 0.95)
-        hot = (bm >= cut).astype(np.float32)
+        fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+        axes[0].imshow(img, cmap="gray")
+        axes[0].set_title(f"Input ({'Anom' if y==1 else 'Normal'})")
+        axes[0].axis("off")
 
-        plt.figure(figsize=(12, 7))
+        axes[1].imshow(sm, cmap="hot")
+        axes[1].set_title(f"Residual Map ({tag} score={scores[i]:.3f})")
+        axes[1].axis("off")
 
-        plt.subplot(2, 3, 1)
-        plt.imshow(img, cmap="gray")
-        plt.title("Original (scaled)")
-        plt.axis("off")
-
-        plt.subplot(2, 3, 2)
-        plt.imshow(sm, cmap="hot")
-        plt.title("Structure residual")
-        plt.axis("off")
-        plt.colorbar(fraction=0.046, pad=0.04)
-
-        plt.subplot(2, 3, 3)
-        plt.hist(flat, bins=30)
-        plt.title("Block residual histogram")
-
-        plt.subplot(2, 3, 4)
-        plt.imshow(bm, cmap="hot")
-        plt.title("Residual (blocks)")
-        plt.axis("off")
-        plt.colorbar(fraction=0.046, pad=0.04)
-
-        plt.subplot(2, 3, 5)
-        plt.imshow(img, cmap="gray")
-        up = np.kron(hot, np.ones((cfg.local_block, cfg.local_block), dtype=np.float32))
-        up = up[:s, :s]
-        plt.imshow(up, alpha=0.35)
-        plt.title("Overlay: top 5% blocks")
-        plt.axis("off")
-
-        plt.suptitle(f"{prefix}_{tag} | y={y} pred={pred} | score={scores[i]:.4g} | thr={thr:.4g}")
-
-        out = os.path.join(out_dir, f"debug_{prefix}_{tag}_i{j:05d}.png")
         plt.tight_layout()
-        plt.savefig(out, dpi=150)
+        plt.savefig(os.path.join(out_dir, f"debug_{prefix}_{j:02d}_{tag}.png"), dpi=120)
         plt.close()
 
 
 def main():
     ap = argparse.ArgumentParser()
-
-    ap.add_argument("--dataset-root", required=True, help="Root that contains Trainig/ and Testing/")
-    ap.add_argument("--train-normal", default="Trainig/notumor", help="Relative to --dataset-root")
-    ap.add_argument("--test-normal", default="Testing/notumor", help="Relative to --dataset-root")
-    ap.add_argument("--test-anom", default="Testing/Ischemoa", help="Relative to --dataset-root")
+    ap.add_argument("--dataset-root", required=True)
+    ap.add_argument("--train-normal", default="Training/after", help="Relative to --dataset-root")
+    ap.add_argument("--test-normal", default="Testing/after", help="Relative to --dataset-root")
+    ap.add_argument("--test-anom", default="Testing/Ischemia", help="Relative to --dataset-root")
 
     ap.add_argument("--img-size", type=int, default=128)
-    ap.add_argument("--norm-mode", choices=["global", "local"], default="local")
+    ap.add_argument("--norm-mode", choices=["global", "local"], default="global")
     ap.add_argument("--local-block", type=int, default=8)
 
     ap.add_argument("--model", required=True, help=".joblib PatchNMFBundle")
 
-    ap.add_argument("--mask-lo-q", type=float, default=20.0)
-    ap.add_argument("--mask-hi-q", type=float, default=99.5)
+    ap.add_argument("--use-dog", action="store_true", help="Enable DoG bandpass filter on residual")
     ap.add_argument("--sigma-small", type=float, default=2.0)
     ap.add_argument("--sigma-large", type=float, default=6.0)
-    ap.add_argument("--block", type=int, default=8)
+    ap.add_argument("--block", type=int, default=16)
 
     ap.add_argument("--score-mode", choices=["mean", "quantile"], default="quantile")
     ap.add_argument("--score-quantile", type=float, default=0.995)
@@ -569,24 +459,12 @@ def main():
     ap.add_argument("--w-lat", type=float, default=0.5)
     ap.add_argument("--w-rar", type=float, default=0.5)
 
-    ap.add_argument("--calib", default=None, help="Load calibration JSON (for frozen results)")
-    ap.add_argument("--save-calib", default=None, help="Save calibration JSON (to freeze results)")
+    ap.add_argument("--calib", default=None, help="Load calibration JSON")
+    ap.add_argument("--save-calib", default=None, help="Save calibration JSON")
 
     ap.add_argument("--out", required=True)
     ap.add_argument("--debug", action="store_true")
     ap.add_argument("--debug-n", type=int, default=12)
-
-    # ── Brain ROI masking ────────────────────────────────────────────────────
-    ap.add_argument("--roi-bg-hi",    type=int,   default=10,
-                    help="Pixel threshold for background/air. Pixels ≤ this → excluded. "
-                         "Approx ≤ -900 HU. (default=10)")
-    ap.add_argument("--roi-skull-lo", type=int,   default=200,
-                    help="Pixel threshold for skull/bone. Pixels ≥ this → excluded. "
-                         "Approx ≥ +400 HU. (default=200)")
-    ap.add_argument("--roi-open-k",   type=int,   default=3)
-    ap.add_argument("--roi-close-k",  type=int,   default=9)
-    ap.add_argument("--no-roi",       action="store_true",
-                    help="Disable ROI masking (use original behaviour).")
 
     args = ap.parse_args()
     ensure_dir(args.out)
@@ -606,21 +484,6 @@ def main():
     test_n_dir = os.path.join(args.dataset_root, args.test_normal)
     test_a_dir = os.path.join(args.dataset_root, args.test_anom)
 
-    # ── Build ROI config ─────────────────────────────────────────────────────
-    if args.no_roi:
-        print("[ROI] Masking DISABLED (--no-roi).")
-        roi_cfg = None
-    else:
-        roi_cfg = BrainROIConfig(
-            bg_hi    = args.roi_bg_hi,
-            skull_lo = args.roi_skull_lo,
-            open_k   = args.roi_open_k,
-            close_k  = args.roi_close_k,
-        )
-        print(f"[ROI] Masking ENABLED: bg_hi={roi_cfg.bg_hi} (~≤-900 HU), "
-              f"skull_lo={roi_cfg.skull_lo} (~≥+400 HU)")
-    # ─────────────────────────────────────────────────────────────────────────
-
     if args.calib is not None:
         cal = load_calib(args.calib)
         calib_path_used = os.path.abspath(args.calib)
@@ -628,13 +491,12 @@ def main():
         train_paths = list_images_flat(train_dir)
         if len(train_paths) == 0:
             raise SystemExit(f"No training-normal images found: {train_dir}")
-        Xtr, _ = load_with_roi(train_paths, cfg, roi_cfg)
+        Xtr, _ = load_images_matrix(train_paths, cfg)
         cal = build_calib(
             bundle, Xtr,
             img_size=int(args.img_size),
             block=int(args.block),
-            lo_q=float(args.mask_lo_q),
-            hi_q=float(args.mask_hi_q),
+            use_dog=args.use_dog,
             sigma_small=float(args.sigma_small),
             sigma_large=float(args.sigma_large),
             recon_batch=int(args.patch_batch),
@@ -653,8 +515,8 @@ def main():
     if len(a_paths) == 0:
         raise SystemExit(f"No test-anom images found: {test_a_dir}")
 
-    Xn, _ = load_with_roi(n_paths, cfg, roi_cfg)
-    Xa, _ = load_with_roi(a_paths, cfg, roi_cfg)
+    Xn, _ = load_images_matrix(n_paths, cfg)
+    Xa, _ = load_images_matrix(a_paths, cfg)
 
     scores_n, maps_n, structs_n, _ = score_dataset(
         bundle, Xn, cal=cal,
@@ -707,10 +569,7 @@ def main():
         "norm_mode": args.norm_mode,
         "local_block": int(args.local_block),
         "block": int(args.block),
-        "mask_lo_q": float(args.mask_lo_q),
-        "mask_hi_q": float(args.mask_hi_q),
-        "sigma_small": float(args.sigma_small),
-        "sigma_large": float(args.sigma_large),
+        "use_dog": bool(args.use_dog),
         "score_mode": args.score_mode,
         "score_quantile": float(args.score_quantile),
         "patch_batch": int(args.patch_batch),
