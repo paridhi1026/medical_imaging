@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 """
-Hybrid PatchNMF anomaly evaluation (tissue-masked hypodensity-aware residual + optional latent Mahalanobis + optional rarity score).
+Diagnostic PatchNMF Anomaly Evaluator.
 
-Features
-- Tissue-masked hypodensity residual map (detects ischemic darkening inside brain parenchyma).
-- Optional latent Mahalanobis distance & rarity score.
-- ROC curve & AUC calculation with auto-direction check.
-- Calibration saving and reuse for frozen evaluations.
+Key fixes implemented per diagnostic protocol:
+1. NO per-image normalization in structure_residual_map (preserves absolute reconstruction error magnitude).
+2. Diagnostic intensity_mask (does NOT discard top/bottom intensity percentiles).
+3. Rarity floor protection (uses 10th percentile floor on block_sig to prevent division-by-near-zero explosion).
+4. Component-wise AUC breakdown: computes independent AUCs for:
+   - Raw MAE (mean absolute reconstruction error)
+   - Raw MSE (mean squared reconstruction error)
+   - Structure Mean (mean spatial residual)
+   - Structure Q99.5 (99.5th percentile localized residual)
+   - Rarity (calibrated spatial block z^2)
+   - Latent (Mahalanobis distance in latent space)
+   - Hybrid Combined score
 """
 
 from __future__ import annotations
@@ -25,7 +32,6 @@ from sklearn.metrics import roc_curve, auc
 
 from nmfcore.config import Config
 from nmfcore.preprocess import load_images_matrix
-from ct_roi_mask import BrainROIConfig, build_brain_mask
 
 try:
     from scipy.ndimage import gaussian_filter
@@ -75,6 +81,14 @@ def block_mean_map(x_img: np.ndarray, block: int) -> np.ndarray:
     return x.mean(axis=(1, 3))
 
 
+def intensity_mask(img: np.ndarray, lo_q: float = 0.0, hi_q: float = 100.0) -> np.ndarray:
+    """
+    Diagnostic mode: retain all pixel intensities so stroke hypodensity
+    or hyperdensity is NOT clipped out.
+    """
+    return np.ones_like(img, dtype=np.float32)
+
+
 def structure_residual_map(
     img: np.ndarray,
     rec: np.ndarray,
@@ -82,29 +96,20 @@ def structure_residual_map(
     use_dog: bool = False,
     sigma_small: float = 2.0,
     sigma_large: float = 6.0,
-    eps: float = 1e-12,
 ) -> np.ndarray:
     """
-    Tissue-masked residual map:
-      - R_abs  = |rec - img|
-      - R_dark = max(0, rec - img)  (signed hypodensity stroke signal)
-      - Masked to tissue region (img > 1e-4)
-    Returns normalized residual map (H,W) float32.
+    Structure residual map.
+    IMPORTANT: Retains absolute magnitude. Does NOT normalize by per-image mean!
     """
-    mask = (img > 1e-4).astype(np.float32)
-    R_abs = np.abs(rec - img).astype(np.float32)
-    R_dark = np.maximum(0.0, rec - img).astype(np.float32)
-    R = (R_abs + 1.5 * R_dark) * mask
+    R = np.abs(img - rec).astype(np.float32)
 
     if use_dog:
         R1 = gaussian_filter(R, sigma=float(sigma_small))
-        R2 = gaussian_filter(R1, sigma=float(sigma_large))
-        S = np.maximum(0.0, R1 - R2).astype(np.float32) * mask
-        denom = float(np.mean(S[mask > 0]) + eps) if np.any(mask > 0) else 1.0
-        return (S / denom).astype(np.float32)
+        R2 = gaussian_filter(R, sigma=float(sigma_large))
+        S = np.maximum(0.0, R1 - R2).astype(np.float32)
+        return S
 
-    denom = float(np.mean(R[mask > 0]) + eps) if np.any(mask > 0) else 1.0
-    return (R / denom).astype(np.float32)
+    return R
 
 
 def scalar_from_blockmap(m: np.ndarray, score_mode: str, score_quantile: float) -> float:
@@ -208,7 +213,11 @@ def compute_train_stats(
         res_scores[i] = float(scalar_from_blockmap(bm, score_mode, score_quantile))
 
     block_mu = block_maps.mean(axis=0)
-    block_sig = block_maps.std(axis=0) + 1e-8
+    block_sig = block_maps.std(axis=0)
+
+    # Use 10th percentile floor on std to prevent zero/near-zero division explosion
+    sig_floor = float(np.percentile(block_sig, 10))
+    block_sig = np.maximum(block_sig, sig_floor)
 
     Z = (block_maps - block_mu[None, :]) / block_sig[None, :]
     rar_scores = (Z * Z).mean(axis=1).astype(np.float32)
@@ -281,7 +290,7 @@ def save_calib(cal: Calib, path: str) -> None:
         json.dump(cal.__dict__, f, indent=2)
 
 
-def score_dataset(
+def evaluate_component_scores(
     bundle,
     X: np.ndarray,
     *,
@@ -292,7 +301,17 @@ def score_dataset(
     w_res: float,
     w_lat: float,
     w_rar: float,
-) -> Tuple[np.ndarray, List[np.ndarray], List[np.ndarray], Optional[np.ndarray]]:
+) -> Dict[str, np.ndarray]:
+    """
+    Computes all component anomaly scores independently:
+      - raw_mae
+      - raw_mse
+      - struct_mean
+      - struct_q995
+      - rarity
+      - latent
+      - hybrid
+    """
     s = int(cal.img_size)
     block = int(cal.block)
     bh = s // block
@@ -304,18 +323,29 @@ def score_dataset(
 
     Xrec = bundle.reconstruct_images(X, batch=int(recon_batch))
 
+    N = X.shape[0]
+    raw_mae = np.zeros(N, dtype=np.float32)
+    raw_mse = np.zeros(N, dtype=np.float32)
+    struct_mean = np.zeros(N, dtype=np.float32)
+    struct_q995 = np.zeros(N, dtype=np.float32)
+    rar_scores = np.zeros(N, dtype=np.float32)
+    res_scores = np.zeros(N, dtype=np.float32)
+
     block_maps: List[np.ndarray] = []
     struct_maps: List[np.ndarray] = []
 
-    res_scores = np.zeros((X.shape[0],), dtype=np.float32)
-    rar_scores = np.zeros((X.shape[0],), dtype=np.float32)
-
-    for i in range(X.shape[0]):
+    for i in range(N):
         img = X[i].reshape(s, s)
         rec = Xrec[i].reshape(s, s)
 
+        diff_abs = np.abs(img - rec)
+        raw_mae[i] = float(np.mean(diff_abs))
+        raw_mse[i] = float(np.mean((img - rec) ** 2))
+
         S = structure_residual_map(img, rec, use_dog=cal.use_dog, sigma_small=cal.sigma_small, sigma_large=cal.sigma_large)
         struct_maps.append(S)
+        struct_mean[i] = float(np.mean(S))
+        struct_q995[i] = float(np.quantile(S, 0.995))
 
         bm = block_mean_map(S, block).astype(np.float32)
         block_maps.append(bm)
@@ -324,12 +354,12 @@ def score_dataset(
 
         if block_mu is not None and block_sig is not None:
             v = bm.reshape(1, -1)
-            z = (v - block_mu) / (block_sig + 1e-8)
+            z = (v - block_mu) / block_sig
             rar_scores[i] = float(np.mean(z * z))
         else:
             rar_scores[i] = 0.0
 
-    lat_scores = np.zeros((X.shape[0],), dtype=np.float32)
+    lat_scores = np.zeros(N, dtype=np.float32)
     latents = try_get_latents(bundle, X, batch=max(16, int(recon_batch)))
     if latents is not None and cal.lat_mu is not None and cal.lat_invcov is not None:
         mu = np.array(cal.lat_mu, dtype=np.float64)
@@ -349,7 +379,34 @@ def score_dataset(
         lat_z = np.zeros_like(res_z)
 
     hybrid = (float(w_res) * res_z) + (float(w_rar) * rar_z) + (float(w_lat) * lat_z)
-    return hybrid.astype(np.float32), block_maps, struct_maps, latents
+
+    return {
+        "raw_mae": raw_mae,
+        "raw_mse": raw_mse,
+        "struct_mean": struct_mean,
+        "struct_q995": struct_q995,
+        "rarity": rar_scores,
+        "latent": lat_scores,
+        "hybrid": hybrid.astype(np.float32),
+        "_block_maps": block_maps,
+        "_struct_maps": struct_maps,
+    }
+
+
+def compute_auc_pair(y_true: np.ndarray, y_score: np.ndarray) -> Tuple[float, float, float, bool]:
+    """Returns (raw_auc, inv_auc, best_auc, is_inverted)"""
+    if len(np.unique(y_true)) < 2:
+        return float("nan"), float("nan"), float("nan"), False
+
+    fpr_raw, tpr_raw, _ = roc_curve(y_true, y_score)
+    raw_auc = float(auc(fpr_raw, tpr_raw))
+
+    fpr_inv, tpr_inv, _ = roc_curve(y_true, -y_score)
+    inv_auc = float(auc(fpr_inv, tpr_inv))
+
+    if inv_auc > raw_auc:
+        return raw_auc, inv_auc, inv_auc, True
+    return raw_auc, inv_auc, raw_auc, False
 
 
 def plot_roc(y_true: np.ndarray, y_score: np.ndarray, title: str, out_png: str) -> float:
@@ -400,7 +457,6 @@ def save_debug(
     prefix: str,
     X: np.ndarray,
     cfg: Config,
-    block_maps: List[np.ndarray],
     struct_maps: List[np.ndarray],
     scores: np.ndarray,
     y_true: np.ndarray,
@@ -451,13 +507,16 @@ def main():
     ap.add_argument("--sigma-large", type=float, default=6.0)
     ap.add_argument("--block", type=int, default=16)
 
-    ap.add_argument("--score-mode", choices=["mean", "quantile"], default="quantile")
+    ap.add_argument("--score-mode", choices=["mean", "quantile"], default="mean")
     ap.add_argument("--score-quantile", type=float, default=0.995)
     ap.add_argument("--patch-batch", type=int, default=16)
 
     ap.add_argument("--w-res", type=float, default=1.0)
-    ap.add_argument("--w-lat", type=float, default=0.5)
-    ap.add_argument("--w-rar", type=float, default=0.5)
+    ap.add_argument("--w-lat", type=float, default=0.0)
+    ap.add_argument("--w-rar", type=float, default=0.0)
+
+    ap.add_argument("--mask-lo-q", type=float, default=0.0)
+    ap.add_argument("--mask-hi-q", type=float, default=100.0)
 
     ap.add_argument("--calib", default=None, help="Load calibration JSON")
     ap.add_argument("--save-calib", default=None, help="Save calibration JSON")
@@ -518,14 +577,14 @@ def main():
     Xn, _ = load_images_matrix(n_paths, cfg)
     Xa, _ = load_images_matrix(a_paths, cfg)
 
-    scores_n, maps_n, structs_n, _ = score_dataset(
+    dict_n = evaluate_component_scores(
         bundle, Xn, cal=cal,
         recon_batch=int(args.patch_batch),
         score_mode=args.score_mode,
         score_quantile=float(args.score_quantile),
         w_res=float(args.w_res), w_lat=float(args.w_lat), w_rar=float(args.w_rar),
     )
-    scores_a, maps_a, structs_a, _ = score_dataset(
+    dict_a = evaluate_component_scores(
         bundle, Xa, cal=cal,
         recon_batch=int(args.patch_batch),
         score_mode=args.score_mode,
@@ -533,31 +592,49 @@ def main():
         w_res=float(args.w_res), w_lat=float(args.w_lat), w_rar=float(args.w_rar),
     )
 
-    y_true = np.concatenate([np.zeros_like(scores_n, dtype=int), np.ones_like(scores_a, dtype=int)])
-    y_score_raw = np.concatenate([scores_n, scores_a]).astype(np.float32)
+    y_true = np.concatenate([np.zeros(Xn.shape[0], dtype=int), np.ones(Xa.shape[0], dtype=int)])
 
-    roc_raw_path = os.path.join(args.out, "roc_raw.png")
-    raw_auc = plot_roc(y_true, y_score_raw, f"ROC raw ({os.path.basename(args.model)})", roc_raw_path)
+    component_keys = ["raw_mae", "raw_mse", "struct_mean", "struct_q995", "rarity", "latent", "hybrid"]
+    component_results = {}
 
-    y_score_inv = (-y_score_raw).astype(np.float32)
-    if len(np.unique(y_true)) >= 2:
-        inv_auc = auc(*roc_curve(y_true, y_score_inv)[:2])
-    else:
-        inv_auc = float("nan")
+    print("\n" + "=" * 75)
+    print(f"DIAGNOSTIC COMPONENT-WISE AUC RESULTS (Model: {os.path.basename(args.model)})")
+    print("=" * 75)
+    print(f"{'Component':<22} | {'Raw AUC':<10} | {'Inv AUC':<10} | {'Best AUC':<10} | {'Inverted?'}")
+    print("-" * 75)
 
-    use_invert = False
-    y_score = y_score_raw
-    best_auc = raw_auc
-    if np.isfinite(inv_auc) and (not np.isfinite(raw_auc) or inv_auc > raw_auc):
-        use_invert = True
-        y_score = y_score_inv
-        best_auc = inv_auc
+    for key in component_keys:
+        sn = dict_n[key]
+        sa = dict_a[key]
+        scores_all = np.concatenate([sn, sa]).astype(np.float32)
 
+        raw_auc, inv_auc, best_auc, is_inv = compute_auc_pair(y_true, scores_all)
+        component_results[key] = {
+            "raw_auc": raw_auc,
+            "inv_auc": inv_auc,
+            "best_auc": best_auc,
+            "is_inverted": is_inv,
+            "normal_mean": float(np.mean(sn)),
+            "normal_std": float(np.std(sn)),
+            "anom_mean": float(np.mean(sa)),
+            "anom_std": float(np.std(sa)),
+        }
+
+        inv_str = "YES" if is_inv else "No"
+        print(f"{key:<22} | {raw_auc:.4f}     | {inv_auc:.4f}     | {best_auc:.4f}     | {inv_str}")
+
+    print("=" * 75 + "\n")
+
+    # Save ROC plot for raw_mae, raw_mse, struct_mean, and hybrid
+    plot_roc(y_true, np.concatenate([dict_n["raw_mae"], dict_a["raw_mae"]]), "ROC Raw MAE", os.path.join(args.out, "roc_raw_mae.png"))
+    plot_roc(y_true, np.concatenate([dict_n["raw_mse"], dict_a["raw_mse"]]), "ROC Raw MSE", os.path.join(args.out, "roc_raw_mse.png"))
+    plot_roc(y_true, np.concatenate([dict_n["struct_mean"], dict_a["struct_mean"]]), "ROC Structure Mean", os.path.join(args.out, "roc_struct_mean.png"))
+
+    hybrid_scores = np.concatenate([dict_n["hybrid"], dict_a["hybrid"]]).astype(np.float32)
     roc_path = os.path.join(args.out, "roc.png")
-    title = f"ROC ({'auto-inverted ' if use_invert else ''}{os.path.basename(args.model)})"
-    _ = plot_roc(y_true, y_score, title, roc_path)
+    best_hybrid_auc = plot_roc(y_true, hybrid_scores, f"ROC Hybrid ({os.path.basename(args.model)})", roc_path)
 
-    thr, cm = best_threshold_youden(y_true, y_score)
+    thr, cm = best_threshold_youden(y_true, hybrid_scores)
 
     metrics = {
         "model": os.path.abspath(args.model),
@@ -567,34 +644,15 @@ def main():
         "test_anom": test_a_dir,
         "img_size": int(args.img_size),
         "norm_mode": args.norm_mode,
-        "local_block": int(args.local_block),
         "block": int(args.block),
         "use_dog": bool(args.use_dog),
-        "score_mode": args.score_mode,
-        "score_quantile": float(args.score_quantile),
-        "patch_batch": int(args.patch_batch),
-        "weights": {"res": float(args.w_res), "lat": float(args.w_lat), "rar": float(args.w_rar)},
         "calib_used": calib_path_used,
-        "n_normal": int(len(scores_n)),
-        "n_anom": int(len(scores_a)),
-        "auc_raw": float(raw_auc) if np.isfinite(raw_auc) else None,
-        "auc_inverted": float(inv_auc) if np.isfinite(inv_auc) else None,
-        "invert_used": bool(use_invert),
-        "auc": float(best_auc) if np.isfinite(best_auc) else None,
+        "n_normal": int(Xn.shape[0]),
+        "n_anom": int(Xa.shape[0]),
+        "component_results": component_results,
+        "hybrid_auc": float(best_hybrid_auc) if np.isfinite(best_hybrid_auc) else None,
         "thr": float(thr),
         "confusion": cm,
-        "scores_normal": {
-            "mean": float(np.mean(scores_n)),
-            "std": float(np.std(scores_n)),
-            "min": float(np.min(scores_n)),
-            "max": float(np.max(scores_n)),
-        },
-        "scores_anom": {
-            "mean": float(np.mean(scores_a)),
-            "std": float(np.std(scores_a)),
-            "min": float(np.min(scores_a)),
-            "max": float(np.max(scores_a)),
-        },
     }
 
     with open(os.path.join(args.out, "metrics.json"), "w") as f:
@@ -602,19 +660,12 @@ def main():
 
     if args.debug:
         k = infer_k_from_model_path(args.model) or "k"
-        prefix = f"hybridStruct_k{k}_{args.score_mode}_b{args.block}"
+        prefix = f"diag_k{k}"
         Xall = np.concatenate([Xn, Xa], axis=0)
-        maps_all = maps_n + maps_a
-        structs_all = structs_n + structs_a
-        save_debug(args.out, prefix, Xall, cfg, maps_all, structs_all, y_score, y_true, thr, n=int(args.debug_n))
+        structs_all = dict_n["_struct_maps"] + dict_a["_struct_maps"]
+        save_debug(args.out, prefix, Xall, cfg, structs_all, hybrid_scores, y_true, thr, n=int(args.debug_n))
 
-    print("Saved:")
-    print(" ", roc_raw_path)
-    print(" ", roc_path)
-    print(" ", os.path.join(args.out, "metrics.json"))
-    if calib_path_used is not None:
-        print(" ", calib_path_used)
-    print(f"AUC(raw)={raw_auc}  AUC(best)={best_auc}  invert={use_invert}  thr={thr}")
+    print(f"Metrics saved to: {os.path.join(args.out, 'metrics.json')}")
 
 
 if __name__ == "__main__":
