@@ -13,10 +13,10 @@ class PatchNMFBundle:
       - Reconstruct full images by patch reconstruction + overlap-add.
     """
 
-    def __init__(self, cfg: Config, nmf: NMF, scaler: MinMaxScaler, patch: int = 16, stride: int = 8):
+    def __init__(self, cfg: Config, nmf: NMF, scaler=None, patch: int = 16, stride: int = 8):
         self.cfg = cfg
         self.nmf = nmf
-        self.scaler = scaler
+        self.scaler = scaler  # kept for backward compatibility if unpickling
         self.patch = int(patch)
         self.stride = int(stride)
 
@@ -40,15 +40,13 @@ class PatchNMFBundle:
 
     def fit_on_patches(self, X_train: np.ndarray, max_patches: int = 0, seed: int = 42) -> None:
         """
-        Fit scaler + NMF on patches.
+        Fit NMF directly on non-negative patches without feature-wise MinMax scaling distortion.
         """
         P = self._all_patches(X_train, max_patches=max_patches, seed=seed)
         if P.shape[0] == 0:
             raise RuntimeError("No patches to train on.")
 
-        Ps = self.scaler.fit_transform(P)
-        # NMF requires non-negative
-        Ps = np.clip(Ps, 0.0, None)
+        Ps = np.clip(P, 0.0, 1.0)
         self.nmf.fit(Ps)
 
     def reconstruct_images(self, X: np.ndarray, batch: int = 16) -> np.ndarray:
@@ -62,15 +60,14 @@ class PatchNMFBundle:
         for i in range(X.shape[0]):
             img = X[i].reshape(s, s)
             P = patchify(img, self.patch, self.stride)               # (m, p*p)
-            Ps = self.scaler.transform(P)
-            Ps = np.clip(Ps, 0.0, None)
+            Ps = np.clip(P, 0.0, 1.0)
 
             W = self.nmf.transform(Ps)
             Prec = W @ self.nmf.components_
-            Prec = self.scaler.inverse_transform(Prec)
             Prec = np.clip(Prec, 0.0, 1.0)
 
             rec2d = unpatchify(Prec, (s, s), self.patch, self.stride)
             out[i] = rec2d.reshape(-1)
 
         return out
+
